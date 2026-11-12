@@ -1,7 +1,9 @@
 {
  "updated": "",
  "focus": "",
- "ideas_files": [],
+ "ideas_files": [
+  {"id": "main", "title": "", "about": "", "path": "ideas/IDEAS.md"}
+ ],
  "groups": [],
  "projects": [],
  "history": []

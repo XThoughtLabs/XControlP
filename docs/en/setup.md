@@ -22,7 +22,7 @@
 
 What happens at start:
 
-- If there is no `projects.json`, it is created from `templates/projects.example.json` (an empty dashboard). An existing `projects.json` is never overwritten.
+- If there is no `projects.json`, it is created from `templates/projects.example.json` (an empty dashboard). An existing `projects.json` is never overwritten. At the same first start, an empty ideas file `ideas/IDEAS.md` is created from `templates/IDEAS.example.md`, so **Ideas** is in the menu from the start.
 - The program builds `data.js` (what the window reads) from your files and starts a small web server that only this computer can reach (`127.0.0.1`). Requests are accepted only from the dashboard window, by a key issued at start.
 - The window opens as an Edge app window. The program closes itself about 10 minutes after the window is closed.
 - Sync runs once (see [section 4](#4-progress-that-updates-itself)).
@@ -45,7 +45,7 @@ To rebuild `data.js` without opening a window: `python XControlP.pyw --build`.
 | `digest_store.py` | daily digests (optional) |
 | `create_shortcut.pyw`, `start_fallback.cmd` | desktop shortcut, spare launcher |
 | `icons/`, `icon.ico`, `icon.svg` | icons |
-| `templates/projects.example.json` | the empty starting `projects.json` |
+| `templates/projects.example.json`, `templates/IDEAS.example.md` | the empty starting `projects.json` and ideas file |
 | `tools/answer_check.py` | checks an assistant's answer file before it goes into `answers/` |
 
 **Your data** (created as you work; all of it is in `.gitignore`):
@@ -54,6 +54,7 @@ To rebuild `data.js` without opening a window: `python XControlP.pyw --build`.
 |---|---|---|
 | `projects.json` | groups, projects, stages, history, settings of sources | you or your assistant |
 | `translations.json` | English and Hebrew versions of your data texts | you or your assistant |
+| `ideas/IDEAS.md` | your ideas (the ideas file created at the first start) | you or your assistant |
 | `auto.json` | the last sync result | the program |
 | `data.js` | everything the window shows | the program |
 | `day.db`, `day.json` | the day plan (database and its read-only copy) | the program only |
@@ -174,13 +175,16 @@ All sources accept `"since": "YYYY-MM-DD"`: events before that date are not adde
 
 ## 5. Ideas
 
-Ideas live in Markdown files. List them in `projects.json`; each file becomes a subsection of **Ideas**:
+Ideas live in Markdown files. List them in `projects.json`; each file becomes a subsection of **Ideas**. From the first start there is one, `ideas/IDEAS.md`:
 
 ```json
 "ideas_files": [
- {"id": "main", "title": "Ideas", "about": "Everything that comes to mind", "path": "C:\\Users\\<you>\\Notes\\IDEAS.md"}
+ {"id": "main", "title": "", "about": "", "path": "ideas/IDEAS.md"},
+ {"id": "work", "title": "Work ideas", "about": "Ideas for the studio", "path": "C:\\Users\\<you>\\Notes\\WORK-IDEAS.md"}
 ]
 ```
+
+A relative path is counted from the XControlP folder. With an empty `title`, the first subsection is called «Ideas» in every window language. If `ideas_files` is empty, the sections **Ideas**, **Our services** and **Ideas analytics** are hidden.
 
 The file has a summary table and a section per idea:
 

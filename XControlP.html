@@ -1030,7 +1030,7 @@
   const NAV_ICON = { all: "obzor", calendar: "calendar", day: "dayplan", review: "review", stats: "stats", digest: "digest", reports: "reports",
     "Технологии": "tech", "Учёба": "study", "Книги": "books", "Философия": "philosophy", "Игры": "games", "Развитие": "growth",
     services: "services", research: "research", "idea-stats": "idea-stats", perf: "perf", alerts: "alerts" };
-  const SET_ICON = { hq: "ideas" };
+  const SET_ICON = { hq: "ideas", main: "ideas" };
   // Стиль значков: «base» — прежние символы, иначе картинки стиля из icons\<папка стиля>.
   const ICON_MISSING = new Set();
   let setLocal = {};
@@ -1164,7 +1164,7 @@
         project: it.project || "", links: Array.isArray(it.links) ? it.links.map(String) : []
       }));
       const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(set.updated || "");
-      return { id: String(set.id || "set" + (i + 1)), title: td(set.title) || tl("Идеи"), about: td(set.about) || "", error: set.error || "", source: set.source || "", items, fromDb: !!set.from_db,
+      return { id: String(set.id || "set" + (i + 1)), title: !set.title || set.title === "Идеи" ? tl("Идеи") : td(set.title) || tl("Идеи"), about: td(set.about) || "", error: set.error || "", source: set.source || "", items, fromDb: !!set.from_db,
         updated: m ? m[3] + "." + m[2] + "." + m[1] + " " + m[4] + ":" + m[5] : "" };
     });
     const ideas = ideaSets[0] || null;
@@ -1502,7 +1502,7 @@
     box.innerHTML = '<div class="tiles' + (tiles.length > 6 ? " t" + tiles.length : "") + '">' + tiles.join("") + '</div>' +
       tl('<div class="card"><h2>Все идеи</h2><p class="sub">Новые сверху · нажмите на идею, чтобы прочитать её целиком</p><div class="filters">') + filters + '</div>' +
       (list.length ? tl('<table><colgroup><col class="c-id"><col class="c-date"><col><col class="c-istatus"></colgroup><thead><tr><th>№</th><th>Дата</th><th>Идея</th><th>Статус</th></tr></thead><tbody>') +
-        rows + '</tbody></table>' : tl('<div class="empty">Таких идей пока нет</div>')) + '</div>' +
+        rows + '</tbody></table>' : (all.length ? tl('<div class="empty">Таких идей пока нет</div>') : '<div class="empty">' + esc(tl("Идей пока нет. Добавьте строку в таблицу файла идей (он указан ниже) или попросите ассистента добавить идею")) + '</div>')) + '</div>' +
       sourceLine(I);
   }
 

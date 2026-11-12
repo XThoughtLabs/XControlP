@@ -17,6 +17,7 @@ ideas-history.json
 requests/
 answers/
 research/
+ideas/
 reports/
 __pycache__/
 *.pyc

@@ -2,7 +2,7 @@
 
 # Using the XControlP window
 
-The menu is on the left, the chosen section on the right. Sections with no data (for example Ideas with no idea files) do not appear in the menu.
+The menu is on the left, the chosen section on the right. **Ideas**, **Our services** and **Ideas analytics** are in the menu while at least one ideas file is listed in `projects.json`; from the first start there is one, `ideas/IDEAS.md`.
 
 ## Top bar and bottom bar
 
@@ -57,9 +57,9 @@ Week, month, quarter (by weeks) and year (by months): day-plan tasks and how man
 
 ## Ideas, services, idea statistics
 
-- **Ideas**: one subsection per idea file. Filter by status; open an idea to see its notes and history. Ids of other ideas in a text are links.
-- **Services**: ideas you marked with the flag as services. Taking the flag off keeps the idea in Services; **Remove from services** takes it out completely. Idea files are never changed.
-- **Idea statistics**: how many ideas are in each status and how that changes over time.
+- **Ideas**: one subsection per idea file. Filter by status; open an idea to see its notes and history. Ids of other ideas in a text are links. While a file has no ideas, the section says how to add one; the file's path is shown at the bottom.
+- **Our services**: ideas you marked with the flag as services. Taking the flag off keeps the idea in services; **Remove from services** takes it out completely. Idea files are never changed.
+- **Ideas analytics**: how many ideas are in each status and how that changes over time.
 - **Overall level**: one score from 0 to 100% made of three parts: movement of projects in progress, ideas carried out, and ideas sorted.
 
 ## Research, reports, digests

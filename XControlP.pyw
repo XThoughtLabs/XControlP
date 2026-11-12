@@ -89,6 +89,8 @@ import webbrowser
 HERE = pathlib.Path(__file__).resolve().parent
 SOURCE = HERE / "projects.json"
 TEMPLATE = HERE / "templates" / "projects.example.json"   # пустой projects.json для первого запуска
+IDEAS_TEMPLATE = HERE / "templates" / "IDEAS.example.md"  # пустой файл идей для первого запуска
+IDEAS_DEFAULT = HERE / "ideas" / "IDEAS.md"               # файл идей, который создаёт первый запуск
 TARGET = HERE / "data.js"
 AUTO = HERE / "auto.json"
 HISTORY = HERE / "ideas-history.json"
@@ -205,6 +207,12 @@ def read_ideas(path):
     return {"source": str(path), "updated": changed, "items": items}
 
 
+def idea_path(value):
+    """Путь к файлу идей: относительный считается от папки программы."""
+    path = pathlib.Path(os.path.expanduser(str(value)))
+    return path if path.is_absolute() else HERE / path
+
+
 def idea_sources(data):
     """Файлы идей → подотделы раздела «Идеи». ideas_files: [{id, title, about, path}, …];
     если списка нет — старое поле ideas_file (один файл идей). --ideas=ПУТЬ заменяет первый файл."""
@@ -291,7 +299,7 @@ def read_idea_sets(data):
     sets = []
     for item in idea_sources(data):
         if item["path"]:
-            found = read_ideas(pathlib.Path(os.path.expanduser(item["path"])))
+            found = read_ideas(idea_path(item["path"]))
         else:
             found = {"source": "", "error": "Для подотдела «" + item["title"] + "» не указан путь к файлу (path в ideas_files)."}
         found.update(id=item["id"], title=item["title"], about=item["about"])
@@ -1062,7 +1070,7 @@ def watched_files():
     db = ideas_db_path(data)
     if db:
         files += [db, db.with_name(db.name + "-journal")]
-    files += [pathlib.Path(os.path.expanduser(item["path"])) for item in idea_sources(data) if item["path"]]
+    files += [idea_path(item["path"]) for item in idea_sources(data) if item["path"]]
     folder = reports_dir(data)
     files += sorted(folder.glob("*.md")) + sorted(folder.glob("*.json")) if folder.is_dir() else []
     mfolder = monthly_dir(data)
@@ -1599,7 +1607,14 @@ def first_start():
         with open(SOURCE, "xb") as out:
             out.write(TEMPLATE.read_bytes())
     except OSError:
-        pass                 # уже есть или не записать — build() покажет причину в окне
+        return               # уже есть или не записать — build() покажет причину в окне
+    if IDEAS_TEMPLATE.is_file() and not IDEAS_DEFAULT.exists():
+        try:
+            IDEAS_DEFAULT.parent.mkdir(exist_ok=True)
+            with open(IDEAS_DEFAULT, "xb") as out:
+                out.write(IDEAS_TEMPLATE.read_bytes())
+        except OSError:
+            pass
 
 
 def main():

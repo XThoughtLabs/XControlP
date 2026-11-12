@@ -40,7 +40,7 @@ You keep my XControlP dashboard in C:\Users\<you>\XControlP. Before any change, 
 | File | The assistant… |
 |---|---|
 | `projects.json`, `translations.json` | edits them, after a backup |
-| idea files (`ideas_files` in `projects.json`) | edits them |
+| idea files (`ideas/IDEAS.md` and the others in `ideas_files`) | edits them |
 | `day.db` | **never opens it**; changes the day plan only through `day.py` |
 | `answers/` | writes answers to requests |
 | `requests/` | only reads |
@@ -186,7 +186,7 @@ The `.md` files lie in `research/` next to `research.json`. `services` links the
 
 ## 9. Ideas and translations
 
-- Ideas: add a row to the summary table and a section `## A-3. Title` in the idea file ([Setup, section 5](setup.md#5-ideas)). Change the status in both places.
+- Ideas: add a row to the summary table and a section `## A-3. Title` in the idea file, by default `ideas/IDEAS.md` ([Setup, section 5](setup.md#5-ideas)). Change the status in both places.
 - Translations: for every new data text (project name, stage, event, group), add its English and Hebrew versions to `translations.json` (the key is the text exactly as written).
 
 The assistant ends each change with one line: what it changed and where.
