@@ -21,7 +21,7 @@
   python day.py close --day D --rating 1..10 [--note ТЕКСТ]   закрыть день с оценкой (вкладка «Итоги дней»)
   python day.py reopen --day D    carry-open --day D      открыть день снова · все незаконченные — на следующий день
   python day.py result [ИМЯ]                              итог запроса (без имени — последние)
-Номер задачи (ID) — 32 знака, его печатает add и show. День по умолчанию — сегодня по времени Израиля.
+Номер задачи (ID) — 32 знака, его печатает add и show. День по умолчанию — сегодня по часам этого компьютера.
 """
 import argparse
 import datetime
@@ -43,12 +43,8 @@ MARK = {"planned": "○", "active": "▶", "done": "✓", "partial": "◐", "not
 PRIO = {"high": "!", "normal": " ", "low": "·"}
 
 
-def israel_today():
-    try:
-        from zoneinfo import ZoneInfo
-        return datetime.datetime.now(ZoneInfo("Asia/Jerusalem")).date().isoformat()
-    except Exception:
-        return datetime.date.today().isoformat()
+def local_today():
+    return datetime.date.today().isoformat()
 
 
 def read_export():
@@ -135,7 +131,7 @@ def send(ops, comment=""):
 
 
 def add_op(a):
-    op = {"op": "add", "day": a.day or israel_today(), "priority": a.priority}
+    op = {"op": "add", "day": a.day or local_today(), "priority": a.priority}
     if a.project:
         op["project"] = a.project
     if a.task:
@@ -168,7 +164,7 @@ def cmd_projects(a):
 
 
 def cmd_show(a):
-    day = a.day or israel_today()
+    day = a.day or local_today()
     data = read_export()
     if not data:
         print("day.json ещё нет: Пульт не открывался после установки плана дня или в плане нет записей.")
@@ -223,7 +219,7 @@ def main():
             it.setdefault("id", uuid.uuid4().hex)
             if isinstance(it.get("stage"), int) and not isinstance(it.get("stage"), bool):
                 it["stage"] -= 1                        # на Пульте этапы с 1, в базе — с 0
-        send([{"op": "plan", "day": a.day or israel_today(), "items": items, "replace": a.replace}], a.comment)
+        send([{"op": "plan", "day": a.day or local_today(), "items": items, "replace": a.replace}], a.comment)
     s.set_defaults(fn=plan)
     s = sub.add_parser("status"); s.add_argument("id"); s.add_argument("status", choices=day_store.SETTABLE); s.add_argument("--note")
     s.set_defaults(fn=lambda a: send([dict({"op": "status", "id": a.id, "status": a.status}, **({"note": a.note} if a.note is not None else {}))]))
@@ -247,14 +243,14 @@ def main():
         send([op])
     s.set_defaults(fn=edit)
     s = sub.add_parser("order"); s.add_argument("--day"); s.add_argument("ids", nargs="+")
-    s.set_defaults(fn=lambda a: send([{"op": "order", "day": a.day or israel_today(), "ids": a.ids}]))
+    s.set_defaults(fn=lambda a: send([{"op": "order", "day": a.day or local_today(), "ids": a.ids}]))
     s = sub.add_parser("day-note"); s.add_argument("--day"); s.add_argument("text")
-    s.set_defaults(fn=lambda a: send([{"op": "day_note", "day": a.day or israel_today(), "note": a.text}]))
+    s.set_defaults(fn=lambda a: send([{"op": "day_note", "day": a.day or local_today(), "note": a.text}]))
     s = sub.add_parser("close"); s.add_argument("--day"); s.add_argument("--rating", type=int, required=True); s.add_argument("--note")
-    s.set_defaults(fn=lambda a: send([dict({"op": "close_day", "day": a.day or israel_today(), "rating": a.rating},
+    s.set_defaults(fn=lambda a: send([dict({"op": "close_day", "day": a.day or local_today(), "rating": a.rating},
                                             **({"note": a.note} if a.note is not None else {}))]))
-    s = sub.add_parser("reopen"); s.add_argument("--day"); s.set_defaults(fn=lambda a: send([{"op": "reopen_day", "day": a.day or israel_today()}]))
-    s = sub.add_parser("carry-open"); s.add_argument("--day"); s.set_defaults(fn=lambda a: send([{"op": "carry_open", "day": a.day or israel_today()}]))
+    s = sub.add_parser("reopen"); s.add_argument("--day"); s.set_defaults(fn=lambda a: send([{"op": "reopen_day", "day": a.day or local_today()}]))
+    s = sub.add_parser("carry-open"); s.add_argument("--day"); s.set_defaults(fn=lambda a: send([{"op": "carry_open", "day": a.day or local_today()}]))
     s = sub.add_parser("result"); s.add_argument("name", nargs="?"); s.add_argument("--last", type=int); s.set_defaults(fn=cmd_result)
     a = ap.parse_args()
     a.fn(a)

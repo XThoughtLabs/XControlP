@@ -3255,7 +3255,7 @@
       (srcBtns ? '<div class="rs-bar"><span class="svc-note">' + esc(tl("Исходные документы")) + ':</span>' + srcBtns + '</div>' : "") +
       (src ? '<p class="rs-note">' + esc(tl("Исходный документ на языке оригинала")) + '</p>' : "") +
       (text ? '<article class="rs-doc" lang="' + esc(lang) + '" dir="' + (lang === "he" ? "rtl" : "ltr") + '">' + mdHtml(text) + '</article>'
-        : '<div class="empty">' + esc(tl("Текст не найден в папке «research»")) + '</div>') + '</div>';
+        : '<div class="empty">' + esc(tl("Текст не найден в папке research")) + '</div>') + '</div>';
   }
   // Простой показ Markdown: заголовки, абзацы, списки с вложением, таблицы, цитаты, код, **жирный**, *курсив*, `код`, ссылки, <br> в таблицах.
   function mdInline(raw) {
