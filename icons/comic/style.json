@@ -1,0 +1,6 @@
+{
+ "id": "comic",
+ "name": {"ru": "Комический", "en": "Comic", "he": "קומי"},
+ "about": {"ru": "Значки-стикеры с героями", "en": "Sticker icons with characters", "he": "סמלי מדבקות עם דמויות"},
+ "made": "2026-10-24, Meshy (gpt-image-2)"
+}
