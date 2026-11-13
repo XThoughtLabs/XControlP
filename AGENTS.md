@@ -16,7 +16,7 @@ The full guide is `docs/en/assistant.md` (also in `docs/ru/` and `docs/he/`). Th
 - `requests/`: read only.
 - `data.js`, `auto.json`, `day.json`, `calendar.json`, `settings.json`, `alerts.json`, `proposals.json`, `flags.json`, `ideas-history.json`: the program writes them; do not change them.
 - `google-client.json`, `google-token*.json`: secrets. Never read, copy, print or send them.
-- The program files (`XControlP.pyw`, `XControlP.html`, `i18n.js`, `*.py`): change them only when the person asks for a change to the program itself.
+- The program files (`XControlP.pyw`, `pult/`, `XControlP.html`, `i18n.js`, `*.py`): change them only when the person asks for a change to the program itself.
 
 ## After a change
 
