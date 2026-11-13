@@ -1,0 +1,617 @@
+window.BOARD = {
+ "updated": "2026-01-14",
+ "focus": "website",
+ "groups": [
+  "Work",
+  "Study",
+  "Развитие"
+ ],
+ "ideas_files": [
+  {
+   "id": "main",
+   "title": "Ideas",
+   "about": "Sample ideas",
+   "path": "ideas/IDEAS.md"
+  }
+ ],
+ "projects": [
+  {
+   "id": "website",
+   "name": "Company website",
+   "group": "Work",
+   "status": "work",
+   "about": "New site for the studio: design, build, publish.",
+   "link": "https://example.com",
+   "stages": [
+    "Design",
+    "Build",
+    "Content",
+    "Publish"
+   ],
+   "current": 1,
+   "last_move": "2026-01-10"
+  },
+  {
+   "id": "shop",
+   "name": "Online shop",
+   "group": "Work",
+   "status": "work",
+   "stages": [
+    "Plan",
+    "Build",
+    "Launch"
+   ],
+   "current": 0,
+   "last_move": "2025-12-01"
+  },
+  {
+   "id": "english",
+   "name": "English course",
+   "group": "Study",
+   "status": "pause",
+   "stages": [
+    "A01–A08: basics",
+    "A09–A16: everyday talk",
+    "A17–A24: writing"
+   ],
+   "current": 0,
+   "last_move": "2025-11-20"
+  },
+  {
+   "id": "garden",
+   "name": "Garden",
+   "group": "Work",
+   "status": "stop",
+   "stages": [
+    "Clean",
+    "Plant"
+   ],
+   "current": 1,
+   "last_move": "2025-10-01"
+  },
+  {
+   "id": "career",
+   "name": "Career",
+   "group": "Развитие",
+   "status": "plan",
+   "stages": [
+    "Map skills",
+    "Apply"
+   ],
+   "current": 0,
+   "last_move": "2026-01-02"
+  }
+ ],
+ "history": [
+  {
+   "date": "2026-01-10",
+   "project": "website",
+   "text": "Design approved"
+  },
+  {
+   "date": "2025-12-01",
+   "project": "shop",
+   "text": "Plan started"
+  },
+  {
+   "date": "2025-11-20",
+   "project": "english",
+   "text": "Paused for the holidays"
+  }
+ ],
+ "idea_source": {
+  "kind": "files",
+  "error": ""
+ },
+ "idea_sets": [
+  {
+   "source": "<ROOT>/ideas/IDEAS.md",
+   "updated": "2026-01-15 10:00",
+   "items": [
+    {
+     "id": "A-1",
+     "date": "2026-01-05",
+     "title": "Newsletter for customers",
+     "full_title": "Monthly newsletter for customers",
+     "status": "идея",
+     "notes": [
+      {
+       "label": "Суть",
+       "text": "A short monthly letter with news of the studio.",
+       "sub": []
+      },
+      {
+       "label": "Статус",
+       "text": "идея",
+       "sub": []
+      }
+     ],
+     "kind": "idea"
+    },
+    {
+     "id": "A-2",
+     "date": "2026-01-08",
+     "title": "Online booking",
+     "full_title": "Online booking",
+     "status": "решение: не реализовано — после сайта",
+     "notes": [
+      {
+       "label": "Суть",
+       "text": "Customers book a time online.",
+       "sub": []
+      },
+      {
+       "label": "Статус",
+       "text": "решение: не реализовано — после сайта",
+       "sub": []
+      }
+     ],
+     "kind": "decision"
+    },
+    {
+     "id": "A-3",
+     "date": "2025-12-20",
+     "title": "Mobile app",
+     "full_title": "Mobile app",
+     "status": "сделано: first version",
+     "notes": [
+      {
+       "label": "Суть",
+       "text": "A small app with the studio's offers.",
+       "sub": []
+      },
+      {
+       "label": "Статус",
+       "text": "сделано: first version",
+       "sub": []
+      }
+     ],
+     "kind": "done"
+    },
+    {
+     "id": "A-4",
+     "date": "2025-12-22",
+     "title": "Loyalty cards",
+     "full_title": "",
+     "status": "отказ",
+     "notes": [],
+     "kind": "dropped"
+    }
+   ],
+   "id": "main",
+   "title": "Ideas",
+   "about": "Sample ideas"
+  }
+ ],
+ "ideas": {
+  "source": "<ROOT>/ideas/IDEAS.md",
+  "updated": "2026-01-15 10:00",
+  "items": [
+   {
+    "id": "A-1",
+    "date": "2026-01-05",
+    "title": "Newsletter for customers",
+    "full_title": "Monthly newsletter for customers",
+    "status": "идея",
+    "notes": [
+     {
+      "label": "Суть",
+      "text": "A short monthly letter with news of the studio.",
+      "sub": []
+     },
+     {
+      "label": "Статус",
+      "text": "идея",
+      "sub": []
+     }
+    ],
+    "kind": "idea"
+   },
+   {
+    "id": "A-2",
+    "date": "2026-01-08",
+    "title": "Online booking",
+    "full_title": "Online booking",
+    "status": "решение: не реализовано — после сайта",
+    "notes": [
+     {
+      "label": "Суть",
+      "text": "Customers book a time online.",
+      "sub": []
+     },
+     {
+      "label": "Статус",
+      "text": "решение: не реализовано — после сайта",
+      "sub": []
+     }
+    ],
+    "kind": "decision"
+   },
+   {
+    "id": "A-3",
+    "date": "2025-12-20",
+    "title": "Mobile app",
+    "full_title": "Mobile app",
+    "status": "сделано: first version",
+    "notes": [
+     {
+      "label": "Суть",
+      "text": "A small app with the studio's offers.",
+      "sub": []
+     },
+     {
+      "label": "Статус",
+      "text": "сделано: first version",
+      "sub": []
+     }
+    ],
+    "kind": "done"
+   },
+   {
+    "id": "A-4",
+    "date": "2025-12-22",
+    "title": "Loyalty cards",
+    "full_title": "",
+    "status": "отказ",
+    "notes": [],
+    "kind": "dropped"
+   }
+  ],
+  "id": "main",
+  "title": "Ideas",
+  "about": "Sample ideas"
+ },
+ "idea_history": {
+  "started": "2026-01-15",
+  "transitions": []
+ },
+ "calendar": {
+  "version": 2,
+  "synced": "2026-01-15 09:00",
+  "checked": "2026-01-15 09:00",
+  "events": [
+   {
+    "calendar": "Personal",
+    "summary": "Dentist",
+    "start": "2026-01-16T09:00",
+    "end": "2026-01-16T10:00"
+   }
+  ],
+  "available": true,
+  "setup": {
+   "client": false,
+   "token": false,
+   "accounts": 0,
+   "login_running": false
+  }
+ },
+ "translations": {
+  "en": {
+   "Развитие": "Growth"
+  },
+  "he": {
+   "Company website": "אתר החברה",
+   "Развитие": "התפתחות"
+  }
+ },
+ "settings": {
+  "lang": "en",
+  "icons": "comic",
+  "theme": "dark",
+  "scale": "100",
+  "accent": "orange"
+ },
+ "icon_styles": [
+  {
+   "id": "comic",
+   "count": 21,
+   "name": {
+    "ru": "Комический",
+    "en": "Comic",
+    "he": "קומי"
+   },
+   "about": {
+    "ru": "Значки-стикеры с героями",
+    "en": "Sticker icons with characters",
+    "he": "סמלי מדבקות עם דמויות"
+   }
+  }
+ ],
+ "alerts": {
+  "stale:website": {
+   "state": "dismissed",
+   "at": "2026-01-15"
+  }
+ },
+ "day_carried": [],
+ "answers": [
+  {
+   "file": "answer-request-2026-01-14-090000-summary.json",
+   "id": "answer-request-2026-01-14-090000-summary",
+   "data": {
+    "format": "pult-answer",
+    "version": 1,
+    "request": "request-2026-01-14-090000-summary",
+    "kind": "summary",
+    "written": "2026-01-14T09:30",
+    "original": "en",
+    "title": {
+     "en": "Day summary 14.01",
+     "ru": "Сводка дня 14.01",
+     "he": "סיכום היום 14.01"
+    },
+    "summary": {
+     "en": "The day is closed: 2 tasks of 3.",
+     "ru": "День закрыт: 2 задачи из 3.",
+     "he": "היום נסגר: 2 משימות מתוך 3."
+    },
+    "blocks": [
+     {
+      "type": "points",
+      "title": {
+       "en": "Done",
+       "ru": "Сделано",
+       "he": "בוצע"
+      },
+      "items": [
+       {
+        "en": "Website: design approved.",
+        "ru": "Сайт: дизайн утверждён.",
+        "he": "האתר: העיצוב אושר."
+       }
+      ]
+     },
+     {
+      "type": "table",
+      "title": {
+       "en": "Week",
+       "ru": "Неделя",
+       "he": "השבוע"
+      },
+      "columns": [
+       {
+        "en": "Measure",
+        "ru": "Показатель",
+        "he": "מדד"
+       },
+       {
+        "en": "Value",
+        "ru": "Значение",
+        "he": "ערך"
+       }
+      ],
+      "rows": [
+       [
+        {
+         "en": "Tasks",
+         "ru": "Задачи",
+         "he": "משימות"
+        },
+        7
+       ],
+       [
+        {
+         "en": "Done",
+         "ru": "Сделано",
+         "he": "בוצע"
+        },
+        5
+       ]
+      ]
+     }
+    ],
+    "proposals": [
+     {
+      "id": "p1",
+      "project": "shop",
+      "text": {
+       "en": "Shop: start the build stage",
+       "ru": "Магазин: начать этап сборки",
+       "he": "החנות: להתחיל את שלב הבנייה"
+      },
+      "why": {
+       "en": "No movement for 44 days.",
+       "ru": "44 дня без движения.",
+       "he": "44 ימים ללא תנועה."
+      }
+     },
+     {
+      "id": "p2",
+      "text": {
+       "en": "Plan the English lesson",
+       "ru": "Запланировать урок английского",
+       "he": "לתכנן שיעור אנגלית"
+      }
+     }
+    ]
+   },
+   "error": ""
+  },
+  {
+   "file": "answer-broken-format.json",
+   "id": "answer-broken-format",
+   "data": null,
+   "error": "вид ответа — summary или proposals"
+  }
+ ],
+ "requests": [
+  {
+   "id": "request-2026-01-15-100000-summary",
+   "kind": "summary",
+   "created": "2026-01-15T10:00:00",
+   "answered": false
+  },
+  {
+   "id": "request-2026-01-15-080000-proposals",
+   "kind": "proposals",
+   "created": "2026-01-15T08:00:00",
+   "answered": false
+  },
+  {
+   "id": "request-2026-01-14-090000-summary",
+   "kind": "summary",
+   "created": "2026-01-14T09:00:00",
+   "answered": true
+  }
+ ],
+ "proposal_marks": {
+  "request-2026-01-14-090000-summary|p1": {
+   "state": "accepted",
+   "at": "2026-01-15"
+  }
+ },
+ "services": {
+  "A-1": {
+   "added": "2026-01-15",
+   "flag": true,
+   "flag_at": "2026-01-15"
+  }
+ },
+ "research": {
+  "entries": [
+   {
+    "id": "market-2026-01",
+    "date": "2026-01-12",
+    "kind": "market",
+    "services": [
+     "A-2"
+    ],
+    "version": "",
+    "original": "en",
+    "title": {
+     "en": "Booking market",
+     "ru": "Рынок онлайн-записи",
+     "he": "שוק ההזמנות"
+    },
+    "answer": {},
+    "text": {
+     "en": "# Booking market\n\nSmall studios move to online booking.\n",
+     "ru": "# Рынок онлайн-записи\n\nНебольшие студии переходят на онлайн-запись.\n",
+     "he": "# שוק ההזמנות\n\nסטודיו קטנים עוברים להזמנות מקוונות.\n"
+    },
+    "missing": [],
+    "sources": [
+     {
+      "lang": "en",
+      "file": "market-2026-01-notes.md",
+      "name": {
+       "en": "Notes",
+       "ru": "Заметки",
+       "he": "הערות"
+      },
+      "text": "Notes: three competitors, two with a free plan.\n"
+     }
+    ]
+   }
+  ],
+  "error": ""
+ },
+ "reports": {
+  "entries": [
+   {
+    "file": "Weekly report 4–10.01.2026.md",
+    "start": "2026-01-04",
+    "end": "2026-01-10",
+    "text": "# Weekly report 4–10.01.2026\n\nA calm week.\n",
+    "data": {
+     "format": "pult-report",
+     "version": 1,
+     "original": "en",
+     "start": "2026-01-04",
+     "end": "2026-01-10",
+     "summary": {
+      "en": "A calm week.",
+      "ru": "Спокойная неделя.",
+      "he": "שבוע רגוע."
+     },
+     "rating": 7,
+     "kpis": [
+      {
+       "id": "tasks",
+       "value": 12
+      },
+      {
+       "id": "done_pct",
+       "value": 75
+      }
+     ],
+     "categories": [
+      {
+       "id": "summary",
+       "title": {
+        "en": "Summary",
+        "ru": "Итог",
+        "he": "סיכום"
+       },
+       "blocks": [
+        {
+         "type": "text",
+         "text": {
+          "en": "Design approved.",
+          "ru": "Дизайн утверждён.",
+          "he": "העיצוב אושר."
+         }
+        }
+       ]
+      },
+      {
+       "id": "risks",
+       "title": {
+        "en": "Risks",
+        "ru": "Риски",
+        "he": "סיכונים"
+       },
+       "blocks": [
+        {
+         "type": "points",
+         "items": [
+          {
+           "en": "The shop has not moved.",
+           "ru": "Магазин не двигается.",
+           "he": "החנות לא זזה."
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "data_error": "",
+    "pushed": null
+   }
+  ],
+  "months": [
+   {
+    "file": "Monthly report 2025-12.md",
+    "start": "2025-12-01",
+    "end": "2025-12-31",
+    "text": "# Monthly report 2025-12\n\nDecember in short.\n",
+    "data": null,
+    "data_error": "",
+    "pushed": null
+   }
+  ],
+  "dir": "<ROOT>/reports/weekly",
+  "months_dir": "<ROOT>/reports/monthly",
+  "error": "no_git"
+ },
+ "digests": {
+  "ok": false,
+  "error": "",
+  "repo": "",
+  "topics": {
+   "llm-models": "Модели",
+   "llm-research": "Исследования и продукты",
+   "agents-memory": "Агенты и память",
+   "security-storage": "Утечки и защита",
+   "hardware": "Железо"
+  },
+  "digests": [],
+  "push": {
+   "ok": null,
+   "at": "",
+   "error": ""
+  },
+  "unpushed": null
+ }
+};

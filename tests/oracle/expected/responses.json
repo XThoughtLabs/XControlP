@@ -1,0 +1,406 @@
+[
+ {
+  "bytes": 374498,
+  "method": "GET",
+  "path": "/",
+  "sha256": "2cd75c5ed1ee0d94ff31f5c7e7144f9a304fe7d6481648cb7578266f2308e7b9",
+  "status": 200,
+  "step": "G01",
+  "type": "text/html; charset=utf-8"
+ },
+ {
+  "bytes": 374498,
+  "method": "GET",
+  "path": "/index.html",
+  "sha256": "2cd75c5ed1ee0d94ff31f5c7e7144f9a304fe7d6481648cb7578266f2308e7b9",
+  "status": 200,
+  "step": "G02",
+  "type": "text/html; charset=utf-8"
+ },
+ {
+  "bytes": 12601,
+  "method": "GET",
+  "path": "/data.js",
+  "sha256": "48918e60c22d6760667144341a39415f4090b695940b0572ba04c7fb92854571",
+  "status": 200,
+  "step": "G03",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 123540,
+  "method": "GET",
+  "path": "/i18n.js",
+  "sha256": "4469661f4f0487a6f3b76fc6d3ccb7c4630b5406ab7a4a8ac00ce1235aea51a8",
+  "status": 200,
+  "step": "G04",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 8635,
+  "method": "GET",
+  "path": "/icon.svg",
+  "sha256": "876399f4e9ea4533dd6eba18da30ff017fccab528e2185c3ca541e18b06b5c72",
+  "status": 200,
+  "step": "G05",
+  "type": "image/svg+xml"
+ },
+ {
+  "bytes": 49488,
+  "method": "GET",
+  "path": "/icon.ico",
+  "sha256": "fd382c0449615590f4709e32464134885ad592e34da2d4530294dd6fd370bea6",
+  "status": 200,
+  "step": "G06",
+  "type": "image/x-icon"
+ },
+ {
+  "bytes": 27412,
+  "method": "GET",
+  "path": "/icons/comic/ideas.png",
+  "sha256": "8808260ae84eee25b2efcab2eb6d4509afe00706b6fea44193c504613e69f290",
+  "status": 200,
+  "step": "G07",
+  "type": "image/png"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "GET",
+  "path": "/icons/comic/missing.png",
+  "status": 404,
+  "step": "G08",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "GET",
+  "path": "/icons/base/ideas.png",
+  "status": 404,
+  "step": "G09",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [], \"summary\": [], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"applied\": []}",
+  "bytes": 191,
+  "method": "GET",
+  "path": "/day.json?day=2026-01-15",
+  "sha256": "96e356739f15fe1d19b126592c29a30c384b21a42fe3393a7d17d98e82c75735",
+  "status": 200,
+  "step": "G10",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [], \"summary\": [], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"applied\": []}",
+  "bytes": 191,
+  "method": "GET",
+  "path": "/day.json",
+  "sha256": "96e356739f15fe1d19b126592c29a30c384b21a42fe3393a7d17d98e82c75735",
+  "status": 200,
+  "step": "G11",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"today\": \"2026-01-15\", \"from\": \"2025-01-10\", \"to\": \"2026-02-15\", \"days\": []}",
+  "bytes": 89,
+  "method": "GET",
+  "path": "/day-review.json",
+  "sha256": "38a8b76c812d017d823b080b43cb51092fa5c6022242bcac898c7b1b636d75c1",
+  "status": 200,
+  "step": "G12",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"today\": \"2026-01-15\", \"from\": \"2026-01-01\", \"to\": \"2026-01-31\", \"days\": []}",
+  "bytes": 89,
+  "method": "GET",
+  "path": "/day-review.json?from=2026-01-01&to=2026-01-31",
+  "sha256": "a8857e2b1a2443d31ad3a61f98fa7b511afbe0f03f894c1b68fd421e07b5a35a",
+  "status": 200,
+  "step": "G13",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "GET",
+  "path": "/nothing-here",
+  "status": 404,
+  "step": "G14",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "GET",
+  "path": "/../XControlP.pyw",
+  "status": 404,
+  "step": "G15",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "GET",
+  "path": "/",
+  "status": 403,
+  "step": "G16",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "GET",
+  "path": "/data.js",
+  "status": 403,
+  "step": "G17",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "POST",
+  "path": "/settings?lang=en",
+  "status": 403,
+  "step": "P01",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "POST",
+  "path": "/settings?lang=en",
+  "status": 403,
+  "step": "P02",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "POST",
+  "path": "/settings?lang=en",
+  "status": 403,
+  "step": "P03",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "POST",
+  "path": "/settings?lang=en",
+  "status": 403,
+  "step": "P04",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "POST",
+  "path": "/nowhere",
+  "status": 404,
+  "step": "P05",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "POST",
+  "path": "/day/op",
+  "status": 400,
+  "step": "P06",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "POST",
+  "path": "/day/op",
+  "status": 400,
+  "step": "P07",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "POST",
+  "path": "/request?kind=summary",
+  "status": 400,
+  "step": "P08",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"lang\": \"en\"}",
+  "bytes": 26,
+  "method": "POST",
+  "path": "/settings?lang=en",
+  "sha256": "9ec01b272894231f6fba713139fa11fba037ee337bb8ec5f070c0adc102765ee",
+  "status": 200,
+  "step": "S01",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": false, \"error\": \"неизвестное значение lang: 'xx'\"}",
+  "bytes": 76,
+  "method": "POST",
+  "path": "/settings?lang=xx",
+  "sha256": "f8f18002887de4a2428eafaca633579ddb2c16a4d87e8028b72b3635f8808b36",
+  "status": 200,
+  "step": "S02",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"key\": \"stale:website\", \"state\": \"dismissed\"}",
+  "bytes": 58,
+  "method": "POST",
+  "path": "/alerts?key=stale:website&state=dismissed",
+  "sha256": "d68d9d7798c6146f23c0166e1c7cbeb81aad78ae1a174c9a074527cdadf10b34",
+  "status": 200,
+  "step": "S03",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"key\": \"stale:shop\", \"state\": \"active\"}",
+  "bytes": 52,
+  "method": "POST",
+  "path": "/alerts?key=stale:shop&state=active",
+  "sha256": "a74d2c3ae1b71a432cf6cb965d8914b148a56968cbb88ec86258a837b5b763bd",
+  "status": 200,
+  "step": "S04",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"id\": \"A-1\", \"on\": true, \"service\": true}",
+  "bytes": 54,
+  "method": "POST",
+  "path": "/idea/flag?id=A-1&on=1",
+  "sha256": "321c8f392225b6fce56f0fa5b219b9fb29c0f5c496403aff95a91c079a621f99",
+  "status": 200,
+  "step": "S05",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": false, \"error\": \"нет такой идеи: Z-99999\"}",
+  "bytes": 61,
+  "method": "POST",
+  "path": "/idea/flag?id=Z-99999&on=1",
+  "sha256": "9fa834349488cb8e4f3497bdd335ff8b14ac5baf7a13cc6a4474bb9104268177",
+  "status": 200,
+  "step": "S06",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"id\": \"A-2\", \"removed\": true}",
+  "bytes": 42,
+  "method": "POST",
+  "path": "/idea/service-remove?id=A-2",
+  "sha256": "59f7d96669afee871563584bd3d11690ff5902f045f55fe8cb9967959c866215",
+  "status": 200,
+  "step": "S07",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"key\": \"request-2026-01-14-090000-summary|p1\", \"state\": \"accepted\"}",
+  "bytes": 80,
+  "method": "POST",
+  "path": "/proposal?key=request-2026-01-14-090000-summary|p1&state=accepted",
+  "sha256": "9c0491a911ebe6e6ae19e6e941065ef4ba70f48dbc53bc235f5bd6482da13ed7",
+  "status": 200,
+  "step": "S08",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"id\": \"request-2026-01-15-100000-summary\"}",
+  "bytes": 55,
+  "method": "POST",
+  "path": "/request?kind=summary",
+  "sha256": "e60d8bcddf330490f4eb1dc7fa8c5b88e2740b05b3a612c8afcc64fe14964dcf",
+  "status": 200,
+  "step": "S09",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": false, \"error\": \"неизвестный вид запроса: 'nope'\"}",
+  "bytes": 78,
+  "method": "POST",
+  "path": "/request?kind=nope",
+  "sha256": "421f35b9ab2243631dc63d6abae3bddeb00032757c3ef0e96eb3262dba9cebe5",
+  "status": 200,
+  "step": "S10",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 1, \"active\": 0, \"done\": 0, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 1, \"left\": 1, \"percent\": 0, \"score\": 0.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"results\": [{\"op\": \"add\", \"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"title\": \"Oracle task\"}]}",
+  "bytes": 992,
+  "method": "POST",
+  "path": "/day/op",
+  "sha256": "ffb361f1f6432c637c8c6f286829e3c0ee9507853af242e0611b5a1f8cc875b3",
+  "status": 200,
+  "step": "S11",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"position\": 1, \"priority\": \"normal\", \"kind\": \"stage\", \"project_id\": \"website\", \"project_name\": \"Company website\", \"stage_index\": 1, \"stage_name\": \"Build\", \"amount\": null, \"title\": \"Build\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"position\": 2, \"priority\": \"high\", \"kind\": \"advance\", \"project_id\": \"english\", \"project_name\": \"English course\", \"stage_index\": null, \"stage_name\": null, \"amount\": \"1 lesson\", \"title\": \"1 lesson\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 3, \"active\": 0, \"done\": 0, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 3, \"percent\": 0, \"score\": 0.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"results\": [{\"op\": \"add\", \"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"title\": \"Build\"}, {\"op\": \"add\", \"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"title\": \"1 lesson\"}]}",
+  "bytes": 2047,
+  "method": "POST",
+  "path": "/day/op",
+  "sha256": "aa15a0e0e30ea2777bacd39a93a8f9afdf37687f4f589ceb5bd12b3663199b02",
+  "status": 200,
+  "step": "S12",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"done\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"position\": 1, \"priority\": \"normal\", \"kind\": \"stage\", \"project_id\": \"website\", \"project_name\": \"Company website\", \"stage_index\": 1, \"stage_name\": \"Build\", \"amount\": null, \"title\": \"Build\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"position\": 2, \"priority\": \"high\", \"kind\": \"advance\", \"project_id\": \"english\", \"project_name\": \"English course\", \"stage_index\": null, \"stage_name\": null, \"amount\": \"1 lesson\", \"title\": \"1 lesson\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 2, \"active\": 0, \"done\": 1, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 2, \"percent\": 33, \"score\": 1.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"results\": [{\"op\": \"status\", \"id\": \"00000000000000000000000000000001\", \"status\": \"done\"}]}",
+  "bytes": 1928,
+  "method": "POST",
+  "path": "/day/op",
+  "sha256": "c7f9231dde746b8c7de8f5c7724039c2eff14e6ccec541f3d5d0782af1101db1",
+  "status": 200,
+  "step": "S13",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": false, \"error\": \"вид задачи: 'nope' (нужно stage — завершить этап, advance — продвинуться, task — своя задача)\"}",
+  "bytes": 174,
+  "method": "POST",
+  "path": "/day/op",
+  "sha256": "07108724d9bdea6d4ad7e6cf10582987eec50a407ef7dcecba857cf10cafab0d",
+  "status": 200,
+  "step": "S14",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": false, \"error\": \"приоритет: 'urgent' (high, normal, low)\"}",
+  "bytes": 74,
+  "method": "POST",
+  "path": "/day/op",
+  "sha256": "df6e5efaea0cda0de9cdbecd2e22ab96a0364033df979bf5dec6babdba5d8d1c",
+  "status": 200,
+  "step": "S18",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": false, \"error\": \"этап: номер от 0 до 3, а пришло 9\"}",
+  "bytes": 79,
+  "method": "POST",
+  "path": "/day/op",
+  "sha256": "0d8ecc384e0c27439d59b29aff4d88acefcec2612befff89952a23aa2ba0c323",
+  "status": 200,
+  "step": "S19",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"done\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"position\": 1, \"priority\": \"normal\", \"kind\": \"stage\", \"project_id\": \"website\", \"project_name\": \"Company website\", \"stage_index\": 1, \"stage_name\": \"Build\", \"amount\": null, \"title\": \"Build\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"position\": 2, \"priority\": \"high\", \"kind\": \"advance\", \"project_id\": \"english\", \"project_name\": \"English course\", \"stage_index\": null, \"stage_name\": null, \"amount\": \"1 lesson\", \"title\": \"1 lesson\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 2, \"active\": 0, \"done\": 1, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 2, \"percent\": 33, \"score\": 1.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"applied\": []}",
+  "bytes": 1852,
+  "method": "GET",
+  "path": "/day.json?day=2026-01-15",
+  "sha256": "6e325b352d7110b087764fdec7de4eb96e355fd8beef012abc69a397ca849fd7",
+  "status": 200,
+  "step": "S15",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "body": "{\"ok\": true, \"today\": \"2026-01-15\", \"from\": \"2026-01-01\", \"to\": \"2026-01-31\", \"days\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 2, \"active\": 0, \"done\": 1, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 2, \"percent\": 33, \"score\": 1.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}]}",
+  "bytes": 329,
+  "method": "GET",
+  "path": "/day-review.json?from=2026-01-01&to=2026-01-31",
+  "sha256": "98deb69f2f27050f494899d57ae318ca0f73c226b385aefa5436bde754d295ca",
+  "status": 200,
+  "step": "S16",
+  "type": "application/json; charset=utf-8"
+ },
+ {
+  "bytes": 12838,
+  "method": "GET",
+  "path": "/data.js",
+  "sha256": "c5b9181bfdd2cff0ce53bfead6ef4ba2d1cfc00e6a4ae97f43bebac7d0800229",
+  "status": 200,
+  "step": "S17",
+  "type": "text/javascript; charset=utf-8"
+ }
+]
