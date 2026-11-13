@@ -4,7 +4,7 @@
 
 XControlP is a desktop dashboard for your own projects. One window shows where each project stands, what moved recently, your plan for the day, your ideas, research and reports. The window works in English, Russian or Hebrew.
 
-It runs on your computer and keeps all data in plain files next to the program. There is no server and no account. Nothing leaves your computer unless you connect it yourself (Google Calendar, git repositories).
+It runs on your computer and keeps all data in plain files next to the program. There is no outside server and no account: the program starts a small web server that only this computer can reach (`127.0.0.1`). Your data leaves the computer only through what you connect yourself: Google Calendar, git repositories and your AI assistant. A cloud assistant, such as Claude, sends what it reads to its provider. Details: [What leaves your computer](docs/en/assistant.md#10-what-leaves-your-computer).
 
 XControlP is built to be kept together with an AI assistant, for example Claude. You tell the assistant what happened; the assistant updates the data files; the window shows the result. You can also edit the files by hand.
 

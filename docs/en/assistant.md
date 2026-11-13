@@ -13,6 +13,7 @@ XControlP is made to be kept by talking. You tell your assistant what happened o
 7. [Reports](#reports)
 8. [Research](#research)
 9. [Ideas and translations](#9-ideas-and-translations)
+10. [What leaves your computer](#10-what-leaves-your-computer)
 
 ## 1. Connect the assistant
 
@@ -190,3 +191,16 @@ The `.md` files lie in `research/` next to `research.json`. `services` links the
 - Translations: for every new data text (project name, stage, event, group), add its English and Hebrew versions to `translations.json` (the key is the text exactly as written).
 
 The assistant ends each change with one line: what it changed and where.
+
+## 10. What leaves your computer
+
+The dashboard works on your computer. Its small web server answers only this computer (`127.0.0.1`), only the dashboard window, and only with the key issued at each start. Your data leaves the computer only through what you connect:
+
+| What you connect | What leaves the computer |
+|---|---|
+| Google Calendar (optional) | the program signs in to Google and downloads your events; it never writes to the calendar |
+| Git repositories (projects whose progress comes from git) | **Sync data** runs `git fetch`; nothing is pushed (a project with `"fetch": false` is read only from the computer) |
+| A digests repository (optional, `digest_repo`) | **Sync data** pulls new digests; your «interesting» and «useful» marks are committed and pushed to that repository |
+| An AI assistant | a cloud assistant (for example Claude) sends what it reads to its provider: data files, the project folders you open to it, your messages; a local model keeps them on the computer |
+
+Give the assistant only the folders it needs. The assistant never reads your Google keys (`google-client.json`, `google-token*.json`), see [section 3](#3-which-files-the-assistant-may-change).
