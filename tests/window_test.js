@@ -30,7 +30,7 @@ function stubElement(id) {
 }
 
 // A fresh page: its own globals, the window files 01 to 09 loaded in order; board: window.BOARD at load (its language).
-function page(board) {
+function page(board, withI18n) {
   const els = {};
   const document = {
     getElementById: (id) => els[id] || (els[id] = stubElement(id)), createElement: (tag) => stubElement(tag),
@@ -45,6 +45,7 @@ function page(board) {
   ctx.window = ctx;
   if (board) ctx.BOARD = board;
   vm.createContext(ctx);
+  if (withI18n) vm.runInContext(fs.readFileSync(path.join(ROOT, "i18n.js"), "utf8"), ctx, { filename: "i18n.js" });
   const files = fs.readdirSync(path.join(ROOT, "js")).filter((f) => /^0\d-.*\.js$/.test(f)).sort();
   for (const f of files) vm.runInContext(fs.readFileSync(path.join(ROOT, "js", f), "utf8"), ctx, { filename: f });
   return { ctx, els, run: (code) => vm.runInContext(code, ctx) };
@@ -300,6 +301,47 @@ function main() {
     check("W17 collections view: count, no request buttons without the program; kind names",
       html.includes("Показано: 3") && !html.includes('data-dg="req:') && html.includes('data-dg="tab:useful"')
       && names === JSON.stringify(["Подборка «Интересное»", "Подборка «Полезное»", "Идеи для моих проектов", "Предложения"]), names + " " + html.slice(0, 200));
+  }
+
+  // XCP-26: opening a section puts its green mark out (and asks the program to remember); the digest tabs per kind;
+  // no translation key that the lookup can never match; a topic without a chip on a tab falls back to all topics.
+  {
+    const posts = [];
+    const p = hqPage([ans("request-a-summary", "summary", "2026-01-15T09:00")], []);
+    Object.assign(p.ctx, { token: "t", fetch: (url) => { posts.push(url); return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }); } });
+    const before = navClass(p, "summary");
+    p.run("renderSummary();");
+    const after = navClass(p, "summary");
+    const d = page({ settings: { lang: "ru" }, digests, answers: [] });
+    Object.assign(d.ctx, { token: "", stamp: (x) => String(x || ""), refresh() {}, showSync() {} });
+    d.ctx.DATA = data(undefined, { answers: [ans("request-u-digest-useful", "digest-useful", "2026-01-15T10:00"),
+      ans("request-i-digest-interesting", "digest-interesting", "2026-01-15T09:00")], requests: [] });
+    d.run("board = normalize(DATA); state.view = 'digest'; state.dgTab = 'interesting'; renderDigest();");
+    const afterInteresting = navClass(d, "digest");
+    d.run("state.dgTab = 'useful'; renderDigest();");
+    const afterUseful = navClass(d, "digest");
+    check("W18 opening a section puts out its mark and posts it; digest tabs per kind",
+      before === " hq-new" && after.indexOf("hq-new") < 0 && posts.length === 1 && posts[0] === "/ui?op=seen&section=summary&id=request-a-summary"
+      && afterInteresting.indexOf("hq-new") >= 0 && afterUseful.indexOf("hq-new") < 0, JSON.stringify({ before, after, posts, afterInteresting, afterUseful }));
+  }
+  {
+    const p = page();
+    const ctx = { window: {} };
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(ROOT, "i18n.js"), "utf8"), ctx);
+    const dict = ctx.window.PULT_I18N;
+    const bad = ["en", "he"].flatMap((l) => Object.keys(dict[l]).filter((k) => p.run("CORE_RE.exec(" + JSON.stringify(k) + ")[2]") !== k).map((k) => l + ": " + k));
+    const en = page({ settings: { lang: "en" } }, true);
+    const names = en.run('JSON.stringify([prKindName("digest-interesting"), prKindName("digest-useful"), tl("Напишите в чате штаба: «разбери запрос». Сводка появится в разделе «Сводка дня».")])');
+    check("W19 no translation key with edge characters; the kind names and the toast are translated",
+      bad.length === 0 && !/[а-яё]/i.test(names.replace("разбери запрос", "")), JSON.stringify(bad.slice(0, 5)) + " " + names);
+  }
+  {
+    const p = dgPage();
+    p.run('state.view = "digest"; state.dgTab = "useful"; state.dgPeriod = "all"; state.dgTopic = "t2"; renderDigest();');
+    p.run('state.dgTab = "interesting"; state.dgPeriod = "custom"; state.dgFrom = "2026-01-15"; state.dgTo = "2026-01-15"; state.dgTopic = "t9"; renderDigest();');
+    const html = p.els.digest.innerHTML, topic = p.run("state.dgTopic");
+    check("W20 a topic without a chip on the tab falls back to all topics", topic === "all" && html.includes("Показано: 2"), topic + " " + (html.match(/Показано: \d+/) || [""])[0]);
   }
 
   console.log("\nPassed " + PASSED.length + ", failed " + FAILED.length + (FAILED.length ? ": " + FAILED.join(", ") : ""));

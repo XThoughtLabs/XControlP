@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 
 sys.dont_write_bytecode = True
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -46,6 +47,34 @@ def main():
         check("V1 memory cleaned: valid unique keys, at most 300; bad ids and sections dropped",
               got["collapsed"][:2] == ["all:tiles:0", "h1a2b:s7:1"] and len(got["collapsed"]) == 300 and got["summary_hidden"] == ""
               and got["seen"] == {"summary": "request-2026-01-15-090000-summary"}, repr({k: (v[:3] if isinstance(v, list) else v) for k, v in got.items()}))
+
+        # V1b: a key or an id with a trailing newline is not taken (the whole value must match).
+        nl = settings.clean_ui({"collapsed": ["all:tiles:0\n"], "summary_hidden": "request-x\n", "seen": {"summary": "request-y\n"}})
+        check("V1b trailing newline refused in keys and ids", nl == {"collapsed": [], "summary_hidden": "", "seen": {}}, repr(nl))
+
+        # V7: what read_settings gives the window is cleaned: a bad memory in settings.json never reaches data.js.
+        settings.SETTINGS.write_text(json.dumps({"ui": {"collapsed": ["ok:a:0", "<b>"], "summary_hidden": "x y", "seen": {"evil": "1"}}}), encoding="utf-8")
+        cleaned = settings.read_settings()["ui"]
+        check("V7 read_settings cleans the memory", cleaned == {"collapsed": ["ok:a:0"], "summary_hidden": "", "seen": {}}, repr(cleaned))
+        settings.SETTINGS.unlink()
+
+        # V8: two threads changing the memory at once lose nothing and never fail on the temporary file.
+        errors = []
+
+        def fold_many(prefix):
+            for i in range(60):
+                try:
+                    r = settings.save_ui(q(op="fold", key=f"{prefix}:z:{i}", on="1"))
+                    if not r["ok"]:
+                        errors.append(r)
+                except Exception as exc:
+                    errors.append(repr(exc))
+        threads = [threading.Thread(target=fold_many, args=(p,)) for p in ("aa", "bb")]
+        [t.start() for t in threads]
+        [t.join() for t in threads]
+        kept = settings.read_settings()["ui"]["collapsed"]
+        check("V8 parallel changes: all 120 folds kept, no error", not errors and len(kept) == 120, repr((len(kept), errors[:2])))
+        settings.SETTINGS.unlink()
 
         # V2: the arrow: folding and unfolding a card is remembered; a bad key or value is refused and nothing is written.
         a = settings.save_ui(q(op="fold", key="all:tiles:0", on="1"))

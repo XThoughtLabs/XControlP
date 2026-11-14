@@ -182,6 +182,37 @@ def main():
             check("U11 silent network: cut after the time limit, error says so",
                   r["state"] == "error" and "не ответил" in r["error"], repr(r))
 
+        # U15: the source commits a file at the path of the user's ignored data file (data.js is in .gitignore, so git
+        # itself would overwrite it silently): the update is refused and names it; the file and HEAD are kept.
+        remote, writer, program = world(base, "u15")
+        (writer / "data.js").write_text("example\n", encoding="utf-8")
+        sh(writer, "add", "-f", "data.js")
+        sh(writer, "commit", "-q", "-m", "an example data file")
+        sh(writer, "push", "-q", "origin", "modules")
+        head = sh(program, "rev-parse", "HEAD")
+        r = up.apply(program)
+        check("U15 the update would overwrite an ignored data file: refused, named, file and HEAD kept",
+              not r["ok"] and "data.js" in r.get("files", []) and sh(program, "rev-parse", "HEAD") == head
+              and (program / "data.js").read_text(encoding="utf-8") == "my data\n", repr(r))
+
+        # U17: an option-like branch name never reaches git fetch: the check refuses to run.
+        remote, writer, program = world(base, "u17")
+        sh(program, "update-ref", "refs/heads/--upload-pack=touch", "HEAD")
+        sh(program, "symbolic-ref", "HEAD", "refs/heads/--upload-pack=touch")
+        r = up.check(program)
+        check("U17 an option-like branch name: unavailable, nothing run", r["state"] == "unavailable" and "имя" in r["error"]
+              and not (program / "touch").exists(), repr(r))
+
+        # U16: a background check is not started while another check holds the lock.
+        real_settings = up.read_settings
+        up.read_settings = lambda: {"updates": "on"}
+        try:
+            with up._LOCK:
+                busy = up.check_in_background()
+        finally:
+            up.read_settings = real_settings
+        check("U16 no second background check while one runs", busy is False, repr(busy))
+
         # U12: with the setting off, no git command runs at all (start, sync, both buttons).
         calls = []
         real_run = up.subprocess.run
@@ -199,7 +230,7 @@ def main():
             up.read_settings = real_settings
         check("U12 setting off: no git command, buttons refuse, the window sees off",
               not calls and started is False and not now["ok"] and not applied["ok"] and shown["enabled"] is False
-              and shown["state"] == "off", repr((calls, shown)))
+              and shown["state"] == "off" and "выключена" in now["error"] and "выключена" in applied["error"], repr((calls, shown, now, applied)))
 
         # U13: a detached HEAD (not on a branch): unavailable.
         remote, writer, program = world(base, "u13")

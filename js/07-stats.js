@@ -183,6 +183,7 @@
     const range = dgRange(list), topic = state.dgTopic || "all", per = state.dgPeriod || "all";
     const all = dgCollect(list, kind, null, "all"), inRange = dgCollect(list, kind, range, "all"), rows = dgCollect(list, kind, range, topic);
     const topics = Array.from(new Set(inRange.map((x) => x.it.topic).filter(Boolean)));
+    if (topic !== "all" && !topics.includes(topic)) { state.dgTopic = "all"; return dgCollectionHtml(kind, list); }   // тема без кнопки здесь — все темы
     const chip = (a, label, on) => '<button type="button" class="rp-cat' + (on ? " on" : "") + '" data-dg="' + esc(a) + '" aria-pressed="' + !!on + '"><span>' + esc(label) + '</span></button>';
     const periods = [["week", "Неделя"], ["month", "Месяц"], ["all", "Всё"], ["custom", "Свои даты"]].map(([k, l]) => chip("period:" + k, tl(l), per === k)).join("") +
       (per === "custom" ? '<label class="dg-range">' + esc(tl("Дата с")) + ' <input type="date" data-dgdate="from" value="' + esc(state.dgFrom || "") + '"></label>' +
@@ -215,8 +216,8 @@
       return;
     }
     if (!DG_TABS.includes(state.dgTab)) state.dgTab = "days";
-    if (state.dgTab !== "days") { box.innerHTML = dgTabs(list) + dgCollectionHtml(state.dgTab, list); prSeen("digest"); return; }
-    const fresh = prSectionMark("digest") === "new" ? prOf("digest")[0] : null;
+    if (state.dgTab !== "days") { box.innerHTML = dgTabs(list) + dgCollectionHtml(state.dgTab, list); prSeen("digest", DG_KIND[state.dgTab]); return; }
+    const fresh = prSectionMark("digest") === "new" ? prUnseen("digest")[0] : null;
     const freshTab = fresh && fresh.data.kind === "digest-interesting" ? "interesting" : "useful";
     if (!state.dgDate || !list.some((d) => d.date === state.dgDate)) state.dgDate = list[0].date;
     const cur = list.find((d) => d.date === state.dgDate), marks = cur.marks || {};

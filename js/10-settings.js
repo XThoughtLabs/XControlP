@@ -69,7 +69,7 @@
     unavailable: "Проверка недоступна", error: "Проверка не удалась", updated: "Программа обновлена." };
   function updBody(u, chip) {
     const U = (window.BOARD && window.BOARD.updates) || {}, on = u.updates === "on", st = UPD_TEXT[U.state] ? U.state : "off";
-    const line = esc(tl(UPD_TEXT[st])) + (st === "available" ? " " + esc(tl("Новых коммитов")) + ": " + (U.behind | 0) + "." : "") +
+    const line = esc(tl(on && st === "off" ? "Ещё не проверялось — нажмите «Проверить сейчас»" : UPD_TEXT[st])) + (st === "available" ? " " + esc(tl("Новых коммитов")) + ": " + (U.behind | 0) + "." : "") +
       (U.error && (st === "unavailable" || st === "error") ? ": " + esc(U.error) : "");
     return '<section class="set-sec"><h3>' + esc(tl("Проверка обновлений")) + '</h3><div class="set-row">' +
       chip("updates", "off", esc(tl("Выключена")), !on) + chip("updates", "on", esc(tl("Включена")), on) + '</div>' +

@@ -9,6 +9,7 @@ fast-forward, only when no tracked file of the program has local changes. Data f
 by git, so updating never touches them. After an update the program asks to be restarted."""
 import datetime
 import os
+import re
 import shutil
 import subprocess
 import threading
@@ -16,6 +17,8 @@ from .config import (GIT_NO_WINDOW, HERE)
 
 FETCH_TIMEOUT = 30        # seconds for git fetch (the network)
 LOCAL_TIMEOUT = 10        # seconds for every other git command
+# a branch or remote name the check accepts: no option-like or unusual names reach git
+NAME = re.compile(r"[A-Za-z0-9._][A-Za-z0-9._/-]{0,199}")
 STATES = ("off", "checking", "current", "available", "ahead", "diverged", "unavailable", "error", "updated")
 
 _LOCK = threading.Lock()          # one check or update at a time
@@ -36,7 +39,9 @@ def git(root, *args, timeout=LOCAL_TIMEOUT):
     exe = git_exe()
     if not exe:
         raise UpdateError("git не найден")
-    env = dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never", LC_ALL="C")
+    # a stalled transfer is stopped by git itself (under 1000 bytes/s for 20 s), not only by the time limit
+    env = dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never", LC_ALL="C",
+               GIT_HTTP_LOW_SPEED_LIMIT="1000", GIT_HTTP_LOW_SPEED_TIME="20")
     try:
         done = subprocess.run([exe, "-C", str(root)] + list(args), capture_output=True, timeout=timeout,
                               env=env, creationflags=GIT_NO_WINDOW)
@@ -66,6 +71,8 @@ def update_source(root):
         branch = git(root, "symbolic-ref", "-q", "--short", "HEAD")
     except UpdateError:
         return None, "программа не на ветке"
+    if not NAME.fullmatch(branch):
+        return None, "необычное имя ветки — проверка не запускается"
     remotes = git(root, "remote").split()
     if "upstream" in remotes:
         return ("upstream", branch, "upstream/" + branch), ""
@@ -76,6 +83,8 @@ def update_source(root):
     remote, _, rbranch = tracked.partition("/")
     if not remote or not rbranch or remote not in remotes:
         return None, "у ветки " + branch + " нет удалённой ветки"
+    if not NAME.fullmatch(remote) or not NAME.fullmatch(rbranch):
+        return None, "необычное имя источника — проверка не запускается"
     return (remote, rbranch, tracked), ""
 
 
@@ -83,6 +92,13 @@ def compare(root, ref):
     """(ahead, behind): commits only here, commits only on the source."""
     ahead, behind = git(root, "rev-list", "--left-right", "--count", "HEAD..." + ref).split()
     return int(ahead), int(behind)
+
+
+def incoming_over_files(root, ref):
+    """Paths the update would add (new or renamed into) that already exist in the folder, untracked —
+    the user's own files (data). git would overwrite such a file silently, so the update must not run."""
+    added = git(root, "diff", "--name-only", "-z", "--no-renames", "--diff-filter=A", "HEAD", ref).split("\0")
+    return [p for p in added if p and (os.path.lexists(root / p))]
 
 
 def local_changes(root):
@@ -132,6 +148,10 @@ def apply(root=None):
             if changed:
                 return {"ok": False, "error": "в файлах программы есть свои правки — обновление не запускалось",
                         "files": changed.splitlines()[:20], "updates": dict(_STATE)}
+            over = incoming_over_files(root, _STATE["source"])
+            if over:
+                return {"ok": False, "error": "обновление принесёт файлы с путями ваших файлов, они были бы перезаписаны — обновление не запускалось",
+                        "files": over[:20], "updates": dict(_STATE)}
             before = git(root, "rev-parse", "HEAD")
             git(root, "merge", "--ff-only", "--quiet", _STATE["source"], timeout=FETCH_TIMEOUT)
             after = git(root, "rev-parse", "HEAD")

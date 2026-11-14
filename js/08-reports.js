@@ -205,20 +205,24 @@
   const prUi = () => { const s = window.BOARD && window.BOARD.settings; return s && s.ui && typeof s.ui === "object" ? s.ui : {}; };
   const prOf = (sec) => prAnswers().filter((a) => a.data && (PR_SECTION[sec] || []).includes(a.data.kind));
   const prOther = () => prAnswers().filter((a) => !a.data || !PR_SECTION.summary.concat(PR_SECTION.digest).includes(a.data.kind));
+  // В «Сводках» у каждой вкладки подборок своя память: ответ по «Полезному» не гаснет, когда открыта «Интересное».
+  const prLatest = (sec, kind) => prOf(sec).find((a) => !kind || a.data.kind === kind);
+  const prSeenId = (key) => (prUi().seen || {})[key];
+  const prUnseen = (sec) => (sec === "digest" ? PR_SECTION.digest.map((k) => [k, prLatest(sec, k)]) : [[sec, prLatest(sec)]])
+    .filter(([key, a]) => a && prSeenId(key) !== a.id).map(([, a]) => a);
   function prSectionMark(sec) {
     const kinds = PR_SECTION[sec] || [];
     if (prWaiting().some((r) => kinds.includes(r.kind))) return "wait";
-    const latest = prOf(sec)[0], seen = prUi().seen || {};
-    return latest && seen[sec] !== latest.id ? "new" : "";
+    return prUnseen(sec).length ? "new" : "";
   }
-  async function prSeen(sec) {
-    const latest = prOf(sec)[0], s = window.BOARD && window.BOARD.settings;
-    if (!latest || !s || (prUi().seen || {})[sec] === latest.id) return;
-    s.ui = Object.assign({}, s.ui, { seen: Object.assign({}, prUi().seen, { [sec]: latest.id }) });   // сразу: метка гаснет
+  async function prSeen(sec, kind) {
+    const key = kind || sec, latest = prLatest(sec, kind), s = window.BOARD && window.BOARD.settings;
+    if (!latest || !s || prSeenId(key) === latest.id) return;
+    s.ui = Object.assign({}, s.ui, { seen: Object.assign({}, prUi().seen, { [key]: latest.id }) });   // сразу: метка гаснет
     renderNav();
     if (typeof token === "undefined" || !token) return;
     try {
-      await fetch("/ui?op=seen&section=" + encodeURIComponent(sec) + "&id=" + encodeURIComponent(latest.id), { method: "POST", headers: { "X-Pult-Token": token } });
+      await fetch("/ui?op=seen&section=" + encodeURIComponent(key) + "&id=" + encodeURIComponent(latest.id), { method: "POST", headers: { "X-Pult-Token": token } });
     } catch (err) { /* не запомнилось — метка вернётся после перезапуска */ }
   }
   async function uiAction(v) {
