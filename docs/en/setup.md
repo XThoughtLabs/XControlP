@@ -40,6 +40,7 @@ To rebuild `data.js` without opening a window: `python XControlP.pyw --build`.
 | `XControlP.pyw` | the program: builds the data, runs the local server, opens the window |
 | `pult/` | the program's code, one file per area (ideas, settings, reports, server, window …); `XControlP.pyw` starts it |
 | `XControlP.html`, `i18n.js` | the window and its labels in English and Hebrew |
+| `css/`, `js/` | the window's styles and scripts (the scripts split by sections of the window); `XControlP.html` loads them |
 | `collect.py` | sync: reads progress from repositories and progress files |
 | `day_store.py`, `day.py`, `day_test.py` | the day plan: storage, the command-line tool for assistants, tests |
 | `calendar_google.py` | Google Calendar sign-in and reading |

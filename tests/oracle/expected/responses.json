@@ -1,18 +1,18 @@
 [
  {
-  "bytes": 374498,
+  "bytes": 46482,
   "method": "GET",
   "path": "/",
-  "sha256": "2cd75c5ed1ee0d94ff31f5c7e7144f9a304fe7d6481648cb7578266f2308e7b9",
+  "sha256": "997ceba2b61fc3ccd55aa3f514fdbfb26ed8c77cfddf4adce3381e81905c1b31",
   "status": 200,
   "step": "G01",
   "type": "text/html; charset=utf-8"
  },
  {
-  "bytes": 374498,
+  "bytes": 46482,
   "method": "GET",
   "path": "/index.html",
-  "sha256": "2cd75c5ed1ee0d94ff31f5c7e7144f9a304fe7d6481648cb7578266f2308e7b9",
+  "sha256": "997ceba2b61fc3ccd55aa3f514fdbfb26ed8c77cfddf4adce3381e81905c1b31",
   "status": 200,
   "step": "G02",
   "type": "text/html; charset=utf-8"
@@ -148,6 +148,113 @@
   "path": "/data.js",
   "status": 403,
   "step": "G17",
+  "type": "text/html;charset=utf-8"
+ },
+ {
+  "bytes": 70546,
+  "method": "GET",
+  "path": "/css/pult.css",
+  "sha256": "880567afa3ba2bbbdd048f7e7848f2b31eaa600b14912e69cba5bf97e159ef88",
+  "status": 200,
+  "step": "G18",
+  "type": "text/css; charset=utf-8"
+ },
+ {
+  "bytes": 47584,
+  "method": "GET",
+  "path": "/js/01-core.js",
+  "sha256": "51a20a0d66d57ae9fc2ddeb632cdb9733831b881407570e5dd72b4cd38619b98",
+  "status": 200,
+  "step": "G19",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 9520,
+  "method": "GET",
+  "path": "/js/02-idea-stats.js",
+  "sha256": "d26ae160fb76e1c5da8e500782849d633e76d18db3687972cac560cef37fa94a",
+  "status": 200,
+  "step": "G20",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 21150,
+  "method": "GET",
+  "path": "/js/03-performance.js",
+  "sha256": "edbe31bbd32f981cbf5724a17963257c4df0c28f4efe3afa3d9c2d68ed0765e9",
+  "status": 200,
+  "step": "G21",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 25273,
+  "method": "GET",
+  "path": "/js/04-calendar.js",
+  "sha256": "0f3a3f9a0ffefc27109219d52804b33d07eeaf6cf065d56eeaf104ee40ff8e7e",
+  "status": 200,
+  "step": "G22",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 28097,
+  "method": "GET",
+  "path": "/js/05-day-plan.js",
+  "sha256": "043147ca907e9b4e8d192d4c3750ab94a5d7616060dfc6bbb8ebe7f0120b2654",
+  "status": 200,
+  "step": "G23",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 13960,
+  "method": "GET",
+  "path": "/js/06-day-results.js",
+  "sha256": "ca18f409840a64c07135646c71a8f87fa110b9015f8e95d79e6706df0de83932",
+  "status": 200,
+  "step": "G24",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 19023,
+  "method": "GET",
+  "path": "/js/07-stats.js",
+  "sha256": "39e94882517d30b4b41b6ccfa62205da2039d703fa83e5d6fb081cd885e17f5e",
+  "status": 200,
+  "step": "G25",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 28286,
+  "method": "GET",
+  "path": "/js/08-reports.js",
+  "sha256": "cd937d057f27c7c3859b8a9d66d9b84aa39db647ad94d942927fe812a26f5d63",
+  "status": 200,
+  "step": "G26",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 34131,
+  "method": "GET",
+  "path": "/js/09-research.js",
+  "sha256": "704a412cb4cb39658e6eee334c03b6df98adcf1ceb4e71e6edf9838667e23ea0",
+  "status": 200,
+  "step": "G27",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "bytes": 30977,
+  "method": "GET",
+  "path": "/js/10-settings.js",
+  "sha256": "db47c8dfb86d88ff8e69dc015c446d971e2ad68a5332b35c316fd4b83886f6e5",
+  "status": 200,
+  "step": "G28",
+  "type": "text/javascript; charset=utf-8"
+ },
+ {
+  "body": "<PYTHON ERROR PAGE>",
+  "method": "GET",
+  "path": "/js/missing.js",
+  "status": 404,
+  "step": "G29",
   "type": "text/html;charset=utf-8"
  },
  {

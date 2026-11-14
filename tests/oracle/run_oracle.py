@@ -251,7 +251,7 @@ def run_once(program, data, out):
             if ctype.startswith(("text/", "application/json")):
                 text = normal(raw.decode("utf-8", errors="replace")).replace(f"127.0.0.1:{port}", "127.0.0.1:<PORT>")
                 raw = text.encode("utf-8")
-                if not path.startswith(("/data.js", "/i18n.js")) and len(text) <= 20000:
+                if not path.startswith(("/data.js", "/i18n.js", "/css/", "/js/")) and len(text) <= 20000:
                     record["body"] = text
             record["bytes"] = len(raw)
             record["sha256"] = hashlib.sha256(raw).hexdigest()
@@ -276,6 +276,18 @@ def run_once(program, data, out):
             call("G15", "GET", "/../XControlP.pyw"),
             call("G16", "GET", "/", host_header="evil.example"),
             call("G17", "GET", "/data.js", host_header=f"localhost:{port}"),
+            call("G18", "GET", "/css/pult.css"),
+            call("G19", "GET", "/js/01-core.js"),
+            call("G20", "GET", "/js/02-idea-stats.js"),
+            call("G21", "GET", "/js/03-performance.js"),
+            call("G22", "GET", "/js/04-calendar.js"),
+            call("G23", "GET", "/js/05-day-plan.js"),
+            call("G24", "GET", "/js/06-day-results.js"),
+            call("G25", "GET", "/js/07-stats.js"),
+            call("G26", "GET", "/js/08-reports.js"),
+            call("G27", "GET", "/js/09-research.js"),
+            call("G28", "GET", "/js/10-settings.js"),
+            call("G29", "GET", "/js/missing.js"),
             call("P01", "POST", "/settings?lang=en", origin=False),
             call("P02", "POST", "/settings?lang=en", token="wrong-token"),
             call("P03", "POST", "/settings?lang=en", origin="http://evil.example"),

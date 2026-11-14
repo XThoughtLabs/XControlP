@@ -24,6 +24,17 @@ class Pult(http.server.ThreadingHTTPServer):
 
 FILES = {"/data.js": ("data.js", "text/javascript; charset=utf-8"),
          "/i18n.js": ("i18n.js", "text/javascript; charset=utf-8"),
+         "/css/pult.css": ("css/pult.css", "text/css; charset=utf-8"),
+         "/js/01-core.js": ("js/01-core.js", "text/javascript; charset=utf-8"),
+         "/js/02-idea-stats.js": ("js/02-idea-stats.js", "text/javascript; charset=utf-8"),
+         "/js/03-performance.js": ("js/03-performance.js", "text/javascript; charset=utf-8"),
+         "/js/04-calendar.js": ("js/04-calendar.js", "text/javascript; charset=utf-8"),
+         "/js/05-day-plan.js": ("js/05-day-plan.js", "text/javascript; charset=utf-8"),
+         "/js/06-day-results.js": ("js/06-day-results.js", "text/javascript; charset=utf-8"),
+         "/js/07-stats.js": ("js/07-stats.js", "text/javascript; charset=utf-8"),
+         "/js/08-reports.js": ("js/08-reports.js", "text/javascript; charset=utf-8"),
+         "/js/09-research.js": ("js/09-research.js", "text/javascript; charset=utf-8"),
+         "/js/10-settings.js": ("js/10-settings.js", "text/javascript; charset=utf-8"),
          "/icon.svg": ("icon.svg", "image/svg+xml"),
          "/icon.ico": ("icon.ico", "image/x-icon")}
 
