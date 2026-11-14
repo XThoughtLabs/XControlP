@@ -97,6 +97,8 @@ When you press **Request a day summary** or **Request proposals**, the program w
               "waiting_requests": [], "open_proposals": []}}
 ```
 
+The three collection buttons in «Digests» (the «Interesting» and «Useful» tabs) write requests of the kinds `digest-interesting`, `digest-useful` and `digest-ideas`. Their snapshot is a period and the digest items marked in it: `{"kind": …, "period": {"name": "week", "from": "…", "to": "…"}, "items": [{"id", "date", "topic", "title", "summary", "why", "url", "source", "marks"}]}`; `digest-ideas` also has `projects` (id, name, group, current stage). The item texts are the Russian originals.
+
 When you write «review the request», the assistant:
 
 1. reads the clock (the time in the answer must be a time it read, never a guess);
@@ -124,7 +126,8 @@ When you write «review the request», the assistant:
 ```
 
 - Every text is an object with `en`, `ru` and `he`; all three are required.
-- `kind` is `summary` or `proposals`; `summary`, `why` and `project` are optional; a proposal `id` uses Latin letters, digits and dashes.
+- `kind` is the request's kind: `summary`, `proposals`, `digest-interesting`, `digest-useful` or `digest-ideas`; `summary`, `why` and `project` are optional; a proposal `id` uses Latin letters, digits and dashes.
+- Where the window shows the answer: `summary` in the «Day summary» section and on the Overview; `digest-interesting` and `digest-useful` in «Digests», on their own tab; `proposals` and `digest-ideas` in «Proposals» (for an idea, `project` is the id of a dashboard project).
 - Blocks are the same as in reports (below).
 
 5. checks the file: `python tools/answer_check.py XControlP.pyw answers/<file>` must print `OK`.

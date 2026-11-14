@@ -68,7 +68,7 @@ Week, month, quarter (by weeks) and year (by months): day-plan tasks and how man
 
 - **Research**: entries your assistant prepared, each in three languages, with its source documents.
 - **Reports**: weekly and monthly reports. If a report has a data file, the window shows its figures and charts by category, and arrows compare it with the previous report; **Original** shows the Markdown text. In the «Risks» and «Proposals» categories every item has **To the day plan**. **Show in folder** opens the file in Explorer.
-- **Digests** (if configured): daily news digests; mark items «interesting» or «useful».
+- **Digests** (if configured): daily news digests; mark items «interesting» or «useful». The **Interesting** and **Useful** tabs collect the marked items of all days, with a topic and a period filter. The buttons **Collect the interesting**, **Collect the useful** and **Ideas for your projects** ask the assistant for a collection of the chosen period (like the requests below); the answer on a collection appears on its tab, ideas in **Proposals**.
 
 ## Proposals and requests to the assistant
 

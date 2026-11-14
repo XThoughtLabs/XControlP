@@ -196,7 +196,9 @@
   const prWaiting = () => ((board && board.requests) || []).filter((r) => !r.answered);
   const prMark = (key) => (board && board.proposalMarks && board.proposalMarks[key]) || null;
   const prKey = (a, p) => a.id + "|" + p.id;
-  const prKindName = (k) => k === "summary" ? tl("Сводка дня") : tl("Предложения");
+  const PR_KIND_NAME = { summary: "Сводка дня", proposals: "Предложения", "digest-interesting": "Подборка «Интересное»",
+    "digest-useful": "Подборка «Полезное»", "digest-ideas": "Идеи для моих проектов" };
+  const prKindName = (k) => tl(Object.prototype.hasOwnProperty.call(PR_KIND_NAME, k) ? PR_KIND_NAME[k] : "Предложения");
   // Разделы ответов штаба: какой вид запроса к какому разделу относится. Метка раздела в меню: жёлтая — запрос ждёт ответа,
   // зелёная — пришёл ответ, который в этом разделе ещё не открывали (память — settings.json, ui.seen).
   const PR_SECTION = { summary: ["summary"], proposals: ["proposals", "digest-ideas"], digest: ["digest-interesting", "digest-useful"] };
@@ -247,16 +249,19 @@
         ideas_new: W.ideasNewCount, ideas_done: W.ideasDone.length },
       waiting_requests: prWaiting().length, open_proposals: prOpen() };
   }
-  async function prRequest(kind, el) {
+  async function prRequest(kind, el, snapshot) {
+    if (snapshot && !snapshot.items.length) { showSync("warn", tl("Запрос не создан"), [["note", tl("За этот период отмеченных пунктов нет")]]); return; }
     if (!dpServer()) { showSync("warn", tl("Запрос не создан"), [["note", tl("Кнопка работает, когда Пульт открыт ярлыком «XControlP» на рабочем столе.")]]); return; }
     if (el) el.disabled = true;
     try {
       const r = await fetch("/request?kind=" + encodeURIComponent(kind), { method: "POST", headers: { "X-Pult-Token": token, "Content-Type": "application/json" },
-        body: JSON.stringify(prSnapshot()) });
+        body: JSON.stringify(snapshot || prSnapshot()) });
       let res = {};
       try { res = await r.json(); } catch (err) { res = { ok: false, error: tl("ответ ") + r.status }; }
       if (!r.ok || !res.ok) throw new Error(res.error || (tl("ответ ") + r.status));
-      showSync("", tl("Запрос создан"), [["note", tl("Напишите в чате штаба: «разбери запрос». Ответ появится во вкладке «Предложения».")]]);
+      showSync("", tl("Запрос создан"), [["note", tl(kind === "summary" ? "Напишите в чате штаба: «разбери запрос». Сводка появится в разделе «Сводка дня»."
+        : kind === "digest-interesting" || kind === "digest-useful" ? "Напишите в чате штаба: «разбери запрос». Ответ появится здесь, в «Сводках»."
+        : "Напишите в чате штаба: «разбери запрос». Ответ появится во вкладке «Предложения».")]]);
       refresh();
     } catch (err) {
       showSync("bad", tl("Запрос не создан"), [["err", esc(String(err && err.message || err))]]);

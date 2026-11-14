@@ -136,6 +136,75 @@
   const dgFmt = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ""); return m ? m[3] + "." + m[2] + "." + m[1] : String(d || ""); };
   // Перевод сводки (с 31.10.2026): поля i18n[LANG] пункта; нет перевода — русский оригинал.
   const dgTr = (it, key) => { const t = LANG !== "ru" && it && it.i18n && it.i18n[LANG]; return (t && t[key]) || (it && it[key]) || ""; };
+  // Подборки (XCP-25): «Интересное» и «Полезное» — все отмеченные пункты за все дни (пункт с обеими отметками — в обеих),
+  // фильтр по теме и по периоду (дата сводки), новые сверху. Только чтение: файлы отметок не меняются. Кнопки кладут запрос
+  // штабу (digest-interesting, digest-useful, digest-ideas) с периодом и пунктами в «requests»; ответы по подборкам — здесь,
+  // по идеям — в «Предложениях». Видно, только когда есть сводки (задан репозиторий сводок).
+  const DG_TABS = ["days", "interesting", "useful"];
+  const DG_KIND = { interesting: "digest-interesting", useful: "digest-useful" };
+  const dgTopicLabel = (t) => dgOwn(DG_TOPIC, t) || td(dgOwn(dgData().topics, t)) || t;
+  const dgIsDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
+  function dgRange(list) {
+    const p = state.dgPeriod || "all", t = today();
+    if (p === "week" || p === "month") { const from = new Date(t); from.setDate(from.getDate() - (p === "week" ? 6 : 29)); return { from: dayKey(from), to: dayKey(t) }; }
+    if (p === "custom") return { from: dgIsDate(state.dgFrom) ? state.dgFrom : "", to: dgIsDate(state.dgTo) ? state.dgTo : "" };
+    const dates = list.map((d) => d.date).filter(dgIsDate).sort();
+    return { from: dates[0] || "", to: dates[dates.length - 1] || "" };
+  }
+  function dgCollect(list, kind, range, topic) {
+    const out = [];
+    list.forEach((d) => {
+      if (range && ((range.from && d.date < range.from) || (range.to && d.date > range.to))) return;
+      (d.items || []).forEach((it) => {
+        const mk = dgOwn(d.marks, it && it.id);
+        if (!mk || mk[kind] !== true || (topic && topic !== "all" && it.topic !== topic)) return;
+        out.push({ date: d.date, it, mk });
+      });
+    });
+    return out.sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.mk.at || "").localeCompare(String(a.mk.at || "")));
+  }
+  function dgSnapshot(kind, list) {
+    const range = dgRange(list), mark = kind === "digest-interesting" ? "interesting" : "useful";
+    const items = dgCollect(list, mark, range, "all").map((x) => ({ id: x.it.id, date: x.date, topic: x.it.topic || "", title: x.it.title || "",
+      summary: x.it.summary || "", why: x.it.why || "", url: x.it.url || "", source: x.it.source || "",
+      marks: { interesting: x.mk.interesting === true, useful: x.mk.useful === true, at: String(x.mk.at || "") } }));
+    const snap = { kind, lang: LANG, period: { name: state.dgPeriod || "all", from: range.from, to: range.to }, items };
+    if (kind === "digest-ideas") snap.projects = board.projects.map((p) => ({ id: p.id, name: p.name, group: p.group, stage: p.stages[p.current] || "" }));
+    return snap;
+  }
+  function dgTabs(list) {
+    const tab = state.dgTab || "days";
+    const t = (k, label, count) => '<button type="button" class="rp-cat' + (tab === k ? " on" : "") + '" data-dg="tab:' + k + '" aria-pressed="' + (tab === k) + '"><span>' +
+      esc(tl(label)) + ' · ' + count + '</span></button>';
+    return '<div class="card dg-tabs"><div class="rp-cats" role="group" aria-label="' + esc(tl("Сводки")) + '">' + t("days", "По дням", list.length) +
+      t("interesting", "Интересное", dgCollect(list, "interesting", null, "all").length) + t("useful", "Полезное", dgCollect(list, "useful", null, "all").length) + '</div></div>';
+  }
+  function dgCollectionHtml(kind, list) {
+    const range = dgRange(list), topic = state.dgTopic || "all", per = state.dgPeriod || "all";
+    const all = dgCollect(list, kind, null, "all"), inRange = dgCollect(list, kind, range, "all"), rows = dgCollect(list, kind, range, topic);
+    const topics = Array.from(new Set(inRange.map((x) => x.it.topic).filter(Boolean)));
+    const chip = (a, label, on) => '<button type="button" class="rp-cat' + (on ? " on" : "") + '" data-dg="' + esc(a) + '" aria-pressed="' + !!on + '"><span>' + esc(label) + '</span></button>';
+    const periods = [["week", "Неделя"], ["month", "Месяц"], ["all", "Всё"], ["custom", "Свои даты"]].map(([k, l]) => chip("period:" + k, tl(l), per === k)).join("") +
+      (per === "custom" ? '<label class="dg-range">' + esc(tl("Дата с")) + ' <input type="date" data-dgdate="from" value="' + esc(state.dgFrom || "") + '"></label>' +
+        '<label class="dg-range">' + esc(tl("Дата по")) + ' <input type="date" data-dgdate="to" value="' + esc(state.dgTo || "") + '"></label>' : "");
+    const tchips = chip("topic:all", tl("Все темы"), topic === "all") + topics.map((t) => chip("topic:" + t, dgTopicLabel(t), topic === t)).join("");
+    const reqs = dpServer() ? (kind === "interesting" ? [["digest-interesting", "Собрать интересное"]] : [["digest-useful", "Собрать полезное"], ["digest-ideas", "Идеи для моих проектов"]])
+      .map(([k, l]) => '<button type="button" class="svc-btn" data-dg="req:' + k + '">' + esc(tl(l)) + '</button>').join("") : "";
+    const rowHtml = (x) => '<article class="dg-item"><div class="dg-head"><span class="dg-n">' + esc(dgFmt(x.date)) + '</span>' +
+      (x.it.topic ? '<span class="dg-topic">' + esc(dgTopicLabel(x.it.topic)) + '</span>' : "") + '<h3>' + esc(dgTr(x.it, "title")) + '</h3></div>' +
+      (x.it.why ? '<p class="dg-why"><b>' + esc(tl("Почему важно тебе:")) + '</b> ' + esc(dgTr(x.it, "why")) + '</p>' : "") +
+      '<div class="dg-foot">' + (x.it.url ? '<a href="' + esc(x.it.url) + '" target="_blank" rel="noopener noreferrer">' + esc(x.it.source || x.it.url) + '</a>' : esc(x.it.source || "")) +
+      (x.mk.at ? '<span class="dg-pub">' + esc(tl("отмечено")) + ' ' + esc(stamp(x.mk.at)) + '</span>' : "") + '</div></article>';
+    const answers = prOf("digest").filter((a) => a.data.kind === DG_KIND[kind]);
+    const waiting = prWaiting().filter((r) => r.kind === DG_KIND[kind] || (kind === "useful" && r.kind === "digest-ideas"));
+    return '<div class="card"><div class="rp-head"><h2>' + esc(tl(kind === "interesting" ? "Интересное" : "Полезное")) + '</h2><span class="rp-tools">' + reqs + '</span></div>' +
+      '<p class="sub">' + esc(tl(kind === "interesting" ? "Пункты сводок с отметкой «интересно», новые сверху" : "Пункты сводок с отметкой «полезно», новые сверху")) +
+      (reqs ? ' · ' + esc(tl("Кнопки запроса берут пункты за выбранный период")) : "") + '</p>' +
+      '<div class="rp-cats">' + periods + '</div><div class="rp-cats">' + tchips + '</div>' +
+      '<p class="dg-status">' + esc(tl("Показано")) + ': ' + rows.length + (rows.length !== all.length ? ' ' + esc(tl("из")) + ' ' + all.length : "") + '</p>' +
+      (waiting.length ? '<ul class="pr-wait">' + waiting.map((r) => '<li>⏳ ' + esc(stamp(r.created)) + ' · ' + esc(prKindName(r.kind)) + ' — ' + esc(tl("ждёт разбора в чате штаба")) + '</li>').join("") + '</ul>' : "") +
+      (rows.length ? rows.map(rowHtml).join("") : '<p class="empty">' + esc(tl("За этот период отмеченных пунктов нет")) + '</p>') + '</div>' + answers.map(prAnswerHtml).join("");
+  }
   function renderDigest() {
     const box = $("digest");
     if (!box || state.view !== "digest") return;
@@ -145,6 +214,10 @@
         esc(D.ok ? tl("Нажмите «Синхронизировать данные», чтобы забрать новые сводки с GitHub.") : (D.error || tl("Репозиторий сводок не найден."))) + '</p></div>';
       return;
     }
+    if (!DG_TABS.includes(state.dgTab)) state.dgTab = "days";
+    if (state.dgTab !== "days") { box.innerHTML = dgTabs(list) + dgCollectionHtml(state.dgTab, list); prSeen("digest"); return; }
+    const fresh = prSectionMark("digest") === "new" ? prOf("digest")[0] : null;
+    const freshTab = fresh && fresh.data.kind === "digest-interesting" ? "interesting" : "useful";
     if (!state.dgDate || !list.some((d) => d.date === state.dgDate)) state.dgDate = list[0].date;
     const cur = list.find((d) => d.date === state.dgDate), marks = cur.marks || {};
     const dates = list.map((d) => {
@@ -170,7 +243,9 @@
     const p = D.push || {};
     const status = p.ok === false ? '<p class="dg-status bad">' + esc(tl("Отметки не отправлены на GitHub: ")) + esc(p.error || "") + '</p>'
       : D.unpushed ? '<p class="dg-status">' + esc(tl("Отметок ждут отправки на GitHub: ")) + D.unpushed + '</p>' : "";
-    box.innerHTML = '<div class="dg-wrap"><div class="card dg-dates"><h2>' + esc(tl("Даты")) + '</h2>' + dates + '</div>' +
+    box.innerHTML = dgTabs(list) + (fresh ? '<div class="card"><button type="button" class="svc-btn" data-dg="tab:' + freshTab + '">' +
+      esc(tl("Пришёл ответ штаба по подборке — открыть")) + '</button></div>' : "") +
+      '<div class="dg-wrap"><div class="card dg-dates"><h2>' + esc(tl("Даты")) + '</h2>' + dates + '</div>' +
       '<div class="dg-main"><div class="card"><h2>' + esc(tl("Сводка на ")) + esc(dgFmt(cur.date)) + '</h2>' +
       (cur.error ? '<p class="sub">' + esc(cur.error) + '</p>' : "") +
       (items || '<p class="empty">' + esc(tl("В этой сводке нет пунктов.")) + '</p>') + status + '</div>' + unv + '</div></div>';
@@ -178,6 +253,10 @@
   async function digestAction(a, el) {
     const parts = String(a || "").split(":");
     if (parts[0] === "date") { state.dgDate = parts[1]; renderDigest(); return; }
+    if (parts[0] === "tab") { state.dgTab = DG_TABS.includes(parts[1]) ? parts[1] : "days"; renderDigest(); return; }
+    if (parts[0] === "period") { state.dgPeriod = ["week", "month", "all", "custom"].includes(parts[1]) ? parts[1] : "all"; renderDigest(); return; }
+    if (parts[0] === "topic") { state.dgTopic = parts.slice(1).join(":") || "all"; renderDigest(); return; }
+    if (parts[0] === "req") { prRequest(parts[1], el, dgSnapshot(parts[1], dgData().digests || [])); return; }
     if (parts[0] !== "mark" || parts.length !== 5) return;
     if (!token) {
       showSync("warn", tl("Отметки недоступны"), [["note", tl("Кнопка работает, когда Пульт открыт ярлыком «XControlP» на рабочем столе, а не как файл.")]]);

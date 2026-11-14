@@ -97,6 +97,8 @@ python day.py result [NAME]                              result of a request
               "waiting_requests": [], "open_proposals": []}}
 ```
 
+שלושת כפתורי האוספים ב«סיכומים» (הלשוניות «מעניין» ו«שימושי») כותבים בקשות מהסוגים `digest-interesting`, `digest-useful` ו-`digest-ideas`. תמונת המצב שלהן היא תקופה ופריטי הסיכומים שסומנו בה: `{"kind": …, "period": {"name": "week", "from": "…", "to": "…"}, "items": [{"id", "date", "topic", "title", "summary", "why", "url", "source", "marks"}]}`; ל-`digest-ideas` יש גם `projects` (id, שם, קבוצה, שלב נוכחי). טקסטי הפריטים הם המקורות ברוסית.
+
 כשכותבים «נתח את הבקשה», העוזר:
 
 1. קורא את השעון (הזמן בתשובה הוא רק זמן שנקרא, אף פעם לא ניחוש);
@@ -124,7 +126,8 @@ python day.py result [NAME]                              result of a request
 ```
 
 - כל טקסט הוא אובייקט עם `he`, `en` ו-`ru`; שלושתם חובה.
-- `kind` הוא `summary` או `proposals`; `summary`, `why` ו-`project` לא חובה; ה-`id` של הצעה באותיות לטיניות, ספרות ומקפים.
+- `kind` הוא סוג הבקשה: `summary`, `proposals`, `digest-interesting`, `digest-useful` או `digest-ideas`; `summary`, `why` ו-`project` לא חובה; ה-`id` של הצעה באותיות לטיניות, ספרות ומקפים.
+- היכן החלון מציג את התשובה: `summary` — במדור «סיכום היום» ובסקירה; `digest-interesting` ו-`digest-useful` — ב«סיכומים», בלשונית שלהם; `proposals` ו-`digest-ideas` — ב«הצעות» (ברעיון, `project` הוא ה-id של פרויקט בלוח הבקרה).
 - הבלוקים זהים לאלה שבדוחות (בהמשך).
 
 5. בודק את הקובץ: `python tools/answer_check.py XControlP.pyw answers/<file>` צריך להדפיס `OK`.

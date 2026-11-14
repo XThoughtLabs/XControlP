@@ -456,7 +456,7 @@ window.BOARD = {
    "file": "answer-broken-format.json",
    "id": "answer-broken-format",
    "data": null,
-   "error": "вид ответа — summary или proposals"
+   "error": "вид ответа — один из: summary, proposals, digest-interesting, digest-useful, digest-ideas"
   }
  ],
  "requests": [

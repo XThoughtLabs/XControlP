@@ -930,3 +930,8 @@
   .fold-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .card.folded > :not(.fold-head) { display: none !important; }
   .card.folded { padding-block: 8px; }
+  /* Подборки «Интересное» и «Полезное» (XCP-25). */
+  .dg-tabs { padding-block: 6px 10px; }
+  .dg-tabs .rp-cats { margin-top: 4px; }
+  .dg-range { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); }
+  .dg-range input { font: inherit; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 3px 6px; }

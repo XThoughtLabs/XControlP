@@ -242,6 +242,66 @@ function main() {
     check("W14 fold keys: stable, Latin, valid for the program", k[0] === "all" && k[1] === k[2] && k[1] !== k[3] && k.every((x) => re.test(x + ":tiles:0")), keys);
   }
 
+  // XCP-25 C: the «Интересное» and «Полезное» collections and the three digest requests.
+  const it = (id, topic) => ({ id, topic, title: "Т " + id, summary: "С " + id, why: "П " + id, url: "https://example.com/" + id, source: "src",
+    i18n: { en: { title: "T " + id } } });
+  const digests = { ok: true, topics: {}, digests: [
+    { date: "2026-01-15", items: [it("a", "t1"), it("b", "t2"), it("c", "t1")],
+      marks: { a: { interesting: true, useful: true, at: "2026-01-15 09:00" }, b: { interesting: true, useful: false, at: "" }, c: { interesting: false, useful: false } } },
+    { date: "2026-01-01", items: [it("d", "t2")], marks: { d: { interesting: false, useful: true, at: "2026-01-02 10:00" } } },
+    { date: "2025-11-01", items: [it("e", "t1")], marks: { e: { interesting: true, useful: false, at: "2025-11-01 08:00" }, ghost: { interesting: true } } }] };
+  const dgPage = () => {
+    const p = page({ settings: { lang: "ru" }, digests });
+    Object.assign(p.ctx, { token: "", stamp: (x) => String(x || ""), refresh() {}, showSync() {} });
+    p.ctx.DATA = data(undefined, {});
+    p.run("board = normalize(DATA);");
+    return p;
+  };
+
+  // W15: each collection holds exactly the marked items (an item with both marks in both; a mark without an item ignored);
+  // newest first; the period (digest date) and the topic filter apply.
+  {
+    const p = dgPage();
+    const ids = (code) => JSON.parse(p.run("JSON.stringify(" + code + ".map((x) => x.it.id))"));
+    const L = "window.BOARD.digests.digests";
+    const marks = (k) => digests.digests.reduce((n, d) => n + d.items.filter((i) => d.marks[i.id] && d.marks[i.id][k] === true).length, 0);
+    const allI = ids('dgCollect(' + L + ', "interesting", null, "all")'), allU = ids('dgCollect(' + L + ', "useful", null, "all")');
+    const rng = '{ from: "2026-01-01", to: "2026-01-15" }';
+    const inI = ids('dgCollect(' + L + ', "interesting", ' + rng + ', "all")'), inU = ids('dgCollect(' + L + ', "useful", ' + rng + ', "all")');
+    const topic = ids('dgCollect(' + L + ', "interesting", ' + rng + ', "t1")');
+    check("W15 collections: counts equal the marks, both marks in both, period and topic filters",
+      allI.length === marks("interesting") && allU.length === marks("useful") && JSON.stringify(allI) === '["a","b","e"]' && JSON.stringify(allU) === '["a","d"]'
+      && JSON.stringify(inI) === '["a","b"]' && JSON.stringify(inU) === '["a","d"]' && JSON.stringify(topic) === '["a"]',
+      JSON.stringify({ allI, allU, inI, inU, topic }));
+  }
+
+  // W16: a request snapshot holds the period and only the items marked in it, Russian originals; «ideas» adds the projects.
+  {
+    const p = dgPage();
+    p.run('state.dgPeriod = "custom"; state.dgFrom = "2026-01-01"; state.dgTo = "2026-01-15";');
+    const useful = JSON.parse(p.run('JSON.stringify(dgSnapshot("digest-useful", window.BOARD.digests.digests))'));
+    const ideas = JSON.parse(p.run('JSON.stringify(dgSnapshot("digest-ideas", window.BOARD.digests.digests))'));
+    const inter = JSON.parse(p.run('JSON.stringify(dgSnapshot("digest-interesting", window.BOARD.digests.digests))'));
+    p.run('state.dgPeriod = "custom"; state.dgFrom = "2026-02-01"; state.dgTo = "2026-02-28";');
+    const none = JSON.parse(p.run('JSON.stringify(dgSnapshot("digest-useful", window.BOARD.digests.digests))'));
+    check("W16 snapshot: period, items in it only, originals; ideas add projects; an empty period gives no items",
+      useful.period.from === "2026-01-01" && useful.period.to === "2026-01-15" && JSON.stringify(useful.items.map((i) => i.id)) === '["a","d"]'
+      && useful.items[0].title === "Т a" && useful.items[0].marks.useful === true && !useful.projects
+      && JSON.stringify(inter.items.map((i) => i.id)) === '["a","b"]' && Array.isArray(ideas.projects) && ideas.projects[0].id === "p1"
+      && none.items.length === 0, JSON.stringify({ useful: useful.items.map((i) => i.id), inter: inter.items.map((i) => i.id), ideas: ideas.projects }));
+  }
+
+  // W17: the collections view shows its count and the request buttons only with the program; the new kinds have names.
+  {
+    const p = dgPage();
+    p.run('state.view = "digest"; state.dgTab = "interesting"; state.dgPeriod = "all"; renderDigest();');
+    const html = p.els.digest.innerHTML;
+    const names = p.run('JSON.stringify(["digest-interesting", "digest-useful", "digest-ideas", "constructor"].map(prKindName))');
+    check("W17 collections view: count, no request buttons without the program; kind names",
+      html.includes("Показано: 3") && !html.includes('data-dg="req:') && html.includes('data-dg="tab:useful"')
+      && names === JSON.stringify(["Подборка «Интересное»", "Подборка «Полезное»", "Идеи для моих проектов", "Предложения"]), names + " " + html.slice(0, 200));
+  }
+
   console.log("\nPassed " + PASSED.length + ", failed " + FAILED.length + (FAILED.length ? ": " + FAILED.join(", ") : ""));
   return FAILED.length ? 1 : 0;
 }

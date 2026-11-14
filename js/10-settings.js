@@ -424,6 +424,10 @@
   });
   document.addEventListener("change", (e) => {
     if (e.target.dataset && e.target.dataset.dpField && e.target.tagName === "SELECT") { dayField(e.target); return; }
+    if (e.target.dataset && e.target.dataset.dgdate) {
+      if (e.target.dataset.dgdate === "from") state.dgFrom = e.target.value; else state.dgTo = e.target.value;
+      renderDigest(); return;
+    }
     if (e.target.classList && e.target.classList.contains("rv-date")) { if (parseDate(e.target.value)) revAction("goto:" + e.target.value); return; }
     if (e.target.classList && e.target.classList.contains("dp-date")) { if (parseDate(e.target.value)) dayAction("goto:" + e.target.value); return; }
     if (!e.target.classList || !e.target.classList.contains("cal-month")) return;

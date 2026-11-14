@@ -5,12 +5,14 @@ library only).
     python -B tests/ui_test.py        exit 0: every check passes; exit 1: a check failed
 
 Each check tries to break one rule: the window's memory in settings.json (folded cards, the summary hidden by
-its cross, the answers already opened) keeps only checked values and survives other settings. Nothing is
+its cross, the answers already opened) keeps only checked values and survives other settings; the three digest
+request kinds are written, listed and answered like the first two, an unknown kind is refused. Nothing is
 written outside a temporary folder; no git command and no network call runs; data.js is not built.
 """
 import json
 import pathlib
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -84,6 +86,58 @@ def main():
         refused = settings.save_settings(q(summary_card="maybe"))
         check("V6 card switch: on by default, only on|off", fallback == "on" and not refused["ok"]
               and settings.setting_choices()["summary_card"] == ("on", "off"), repr((fallback, refused)))
+
+        # R1-R4: the HQ request kinds (XCP-25 C).
+        import pult.hq_exchange as hq
+        from pult.config import REQUEST_KINDS
+        hq.build = lambda: None
+        hq.stamps = lambda: None
+        hq.REQUESTS_DIR = folder / "requests"
+        import datetime as real_datetime
+        import types
+
+        class Fixed(real_datetime.datetime):           # one second for both writes: the second file must get -2
+            @classmethod
+            def now(cls, tz=None):
+                return cls(2026, 1, 15, 10, 0, 0)
+        hq.datetime = types.SimpleNamespace(datetime=Fixed, date=real_datetime.date)
+        three = ("digest-interesting", "digest-useful", "digest-ideas")
+        check("R1 request kinds: the two first and the three digest kinds", REQUEST_KINDS == ("summary", "proposals") + three, repr(REQUEST_KINDS))
+
+        lang = {"ru": "т", "en": "t", "he": "ת"}
+        answer = lambda kind, **kw: dict({"format": "pult-answer", "version": 1, "kind": kind, "written": "2026-01-15T10:00", "title": lang}, **kw)
+        problems = {k: hq.check_answer(answer(k, summary=lang, blocks=[], proposals=[{"id": "p1", "text": lang, "why": lang, "project": "web"}] if k == "digest-ideas" else []))
+                    for k in REQUEST_KINDS}
+        unknown = hq.check_answer(answer("digest-everything"))
+        check("R2 answers of every kind accepted; an unknown kind refused with the list", all(v == "" for v in problems.values())
+              and "digest-useful" in unknown, repr((problems, unknown)))
+
+        snap = {"kind": "digest-ideas", "period": {"name": "week", "from": "2026-01-09", "to": "2026-01-15"},
+                "items": [{"id": "a", "date": "2026-01-15", "title": "т", "marks": {"useful": True}}], "projects": [{"id": "web"}]}
+        w1 = hq.write_request(q(kind="digest-ideas"), json.dumps(snap).encode("utf-8"))
+        w2 = hq.write_request(q(kind="digest-ideas"), json.dumps(snap).encode("utf-8"))
+        w3 = hq.write_request(q(kind="digest-everything"), b"{}")
+        saved = json.loads((hq.REQUESTS_DIR / (w1["id"] + ".json")).read_text(encoding="utf-8")) if w1.get("ok") else {}
+        check("R3 digest request written with its snapshot; same second gets -2; unknown kind refused",
+              w1["ok"] and w2["ok"] and w2["id"] == w1["id"] + "-2" and saved.get("kind") == "digest-ideas" and saved.get("snapshot") == snap
+              and not w3["ok"], repr((w1, w2, w3)))
+
+        hq.datetime = real_datetime
+        listed = hq.read_requests([{"data": {"request": w1["id"]}}])
+        by = {r["id"]: r for r in listed}
+        check("R4 requests listed with their kind (also with -2) and whether answered",
+              by[w1["id"]]["kind"] == "digest-ideas" and by[w2["id"]]["kind"] == "digest-ideas" and by[w1["id"]]["answered"] is True
+              and by[w2["id"]]["answered"] is False and by[w1["id"]]["created"].startswith(w1["id"][8:18]), repr(listed))
+
+        # R5: the HQ helper tools/answer_check.py accepts a digest answer with the program's own rule.
+        good = folder / "answer-good.json"
+        good.write_text(json.dumps(answer("digest-useful", summary=lang, blocks=[])), encoding="utf-8")
+        bad = folder / "answer-bad.json"
+        bad.write_text(json.dumps(answer("digest-everything")), encoding="utf-8")
+        run = subprocess.run([sys.executable, "-B", str(ROOT / "tools" / "answer_check.py"), str(ROOT / "XControlP.pyw"), str(good), str(bad)],
+                             capture_output=True, text=True, encoding="utf-8")
+        check("R5 answer_check: digest answer OK, unknown kind BAD", run.returncode == 1 and "OK   " + str(good) in run.stdout
+              and "BAD  " + str(bad) in run.stdout, run.stdout + run.stderr)
     finally:
         shutil.rmtree(folder, ignore_errors=True)
     print(f"\n{len(PASSED)} passed, {len(FAILED)} failed")

@@ -5,13 +5,14 @@ import json
 import os
 import re
 from .config import (ANSWERS_DIR, ANSWER_MAX, PROPOSALS, PROPOSAL_KEY, PROPOSAL_STATES, REQUESTS_DIR,
-                     REQUEST_KINDS)
+                     REQUEST_FILE, REQUEST_KINDS)
 
 
 # ---------------------------------------------------------------- запросы штабу и предложения
 
 def write_request(query, body):
-    """POST /request?kind=summary|proposals, тело — снимок Пульта из окна (JSON-объект) → «requests/request-…-kind.json».
+    """POST /request?kind=summary|proposals|digest-interesting|digest-useful|digest-ideas, тело — снимок Пульта из окна
+    (JSON-объект; у подборок — период и отмеченные пункты сводок) → «requests/request-…-kind.json».
     Запрос лежит в файле; пользователь просит штаб в чате разобрать его; ответ штаба — в папке answers."""
     kind = ((query or {}).get("kind") or [""])[0]
     if kind not in REQUEST_KINDS:
@@ -50,7 +51,7 @@ def check_answer(data):
     if not isinstance(data, dict) or data.get("format") != "pult-answer" or data.get("version") != 1:
         return "не pult-answer версии 1"
     if data.get("kind") not in REQUEST_KINDS:
-        return "вид ответа — summary или proposals"
+        return "вид ответа — один из: " + ", ".join(REQUEST_KINDS)
     if not re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}", str(data.get("written") or "")):
         return "нет времени written (ГГГГ-ММ-ДДTЧЧ:ММ)"
     if not lang_text(data.get("title")):
@@ -100,8 +101,8 @@ def read_requests(answers):
     if not REQUESTS_DIR.is_dir():
         return found
     for path in REQUESTS_DIR.glob("request-*.json"):
-        kind = "summary" if "-summary" in path.stem else "proposals" if "-proposals" in path.stem else ""
-        m = re.match(r"^request-(\d{4}-\d{2}-\d{2})-(\d{2})(\d{2})(\d{2})", path.stem)
+        m = REQUEST_FILE.match(path.stem)
+        kind = m[5] if m and m[5] in REQUEST_KINDS else ""
         created = f"{m[1]}T{m[2]}:{m[3]}:{m[4]}" if m else ""
         found.append({"id": path.stem, "kind": kind, "created": created, "answered": path.stem in done})
     found.sort(key=lambda r: r["id"], reverse=True)

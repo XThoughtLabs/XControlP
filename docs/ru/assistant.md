@@ -97,6 +97,8 @@ python day.py result [ИМЯ]                               итог запро�
               "waiting_requests": [], "open_proposals": []}}
 ```
 
+Три кнопки подборок в «Сводках» (вкладки «Интересное» и «Полезное») пишут запросы видов `digest-interesting`, `digest-useful` и `digest-ideas`. Их снимок — период и пункты сводок, отмеченные за него: `{"kind": …, "period": {"name": "week", "from": "…", "to": "…"}, "items": [{"id", "date", "topic", "title", "summary", "why", "url", "source", "marks"}]}`; у `digest-ideas` ещё `projects` (id, имя, группа, текущий этап). Тексты пунктов — русские оригиналы.
+
 Когда вы пишете «разбери запрос», ассистент:
 
 1. читает часы (время в ответе — только прочитанное, никогда не угаданное);
@@ -124,7 +126,8 @@ python day.py result [ИМЯ]                               итог запро�
 ```
 
 - Каждый текст — объект с `ru`, `en` и `he`; все три обязательны.
-- `kind` — `summary` или `proposals`; `summary`, `why` и `project` — по желанию; `id` предложения — латиница, цифры и дефис.
+- `kind` — вид запроса: `summary`, `proposals`, `digest-interesting`, `digest-useful` или `digest-ideas`; `summary`, `why` и `project` — по желанию; `id` предложения — латиница, цифры и дефис.
+- Где окно показывает ответ: `summary` — в разделе «Сводка дня» и на обзоре; `digest-interesting` и `digest-useful` — в «Сводках», на своей вкладке; `proposals` и `digest-ideas` — в «Предложениях» (у предложения по идеям `project` — id проекта Пульта).
 - Блоки — такие же, как в отчётах (ниже).
 
 5. проверяет файл: `python tools/answer_check.py XControlP.pyw answers/<файл>` должен напечатать `OK`.
