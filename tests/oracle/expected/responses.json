@@ -18,19 +18,19 @@
   "type": "text/html; charset=utf-8"
  },
  {
-  "bytes": 12925,
+  "bytes": 13097,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "ee49e0ba0acedd34209cac0e192a1164131f5c2f8c47c4238575728a011d6f84",
+  "sha256": "12b64a3cd0746a26f4e4fb4f543bb440b03244feef0751c46216c251fe0ee420",
   "status": 200,
   "step": "G03",
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 123540,
+  "bytes": 128364,
   "method": "GET",
   "path": "/i18n.js",
-  "sha256": "4469661f4f0487a6f3b76fc6d3ccb7c4630b5406ab7a4a8ac00ce1235aea51a8",
+  "sha256": "8d02e6ffad45f1ef0003bbc8bafe6c054c625a4e6c7269483dc838d597e5845a",
   "status": 200,
   "step": "G04",
   "type": "text/javascript; charset=utf-8"
@@ -151,19 +151,19 @@
   "type": "text/html;charset=utf-8"
  },
  {
-  "bytes": 70546,
+  "bytes": 71158,
   "method": "GET",
   "path": "/css/pult.css",
-  "sha256": "880567afa3ba2bbbdd048f7e7848f2b31eaa600b14912e69cba5bf97e159ef88",
+  "sha256": "d09b8799627b15963010ce43728640dd836dd88f263e0998c1a8c783f11d783e",
   "status": 200,
   "step": "G18",
   "type": "text/css; charset=utf-8"
  },
  {
-  "bytes": 50754,
+  "bytes": 51174,
   "method": "GET",
   "path": "/js/01-core.js",
-  "sha256": "471fae5ba9869dfa9c48fba8b9738d90baf59c4ef3d308400427d2ff1948074d",
+  "sha256": "533fa663ed36bde3ce60d009cbe84bd0ac013ccbd062d3983a126c56e78dfa07",
   "status": 200,
   "step": "G19",
   "type": "text/javascript; charset=utf-8"
@@ -241,10 +241,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 30977,
+  "bytes": 35275,
   "method": "GET",
   "path": "/js/10-settings.js",
-  "sha256": "db47c8dfb86d88ff8e69dc015c446d971e2ad68a5332b35c316fd4b83886f6e5",
+  "sha256": "176aa7674a649d55a7960c3bfa31d2d5e64ada37fda71ef397ee06031672cbec",
   "status": 200,
   "step": "G28",
   "type": "text/javascript; charset=utf-8"
@@ -502,10 +502,10 @@
   "type": "application/json; charset=utf-8"
  },
  {
-  "bytes": 13162,
+  "bytes": 13334,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "cbceffa938ecc291aac732771733253fbb9e8fc69315f13e79dd656f382b44da",
+  "sha256": "11a651591c8613aa297cee1057bc31ecb6d9232084f62f4e906e51b03c0c2e50",
   "status": 200,
   "step": "S17",
   "type": "text/javascript; charset=utf-8"

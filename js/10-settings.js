@@ -3,7 +3,7 @@
   // Кнопка ☰ перед языками → панель со стороны меню. Выбор хранит программа в settings.json (POST /settings?icons=…&theme=…).
   // Этап 2: стили значков — найденные программой в icons (style.json) и «Базовый» (символы); «Вернуть базовые настройки».
   const setPanel = $("settings-panel");
-  const SET_DEFAULT = { icons: "comic", theme: "dark", scale: "100", accent: "orange" };
+  const SET_DEFAULT = { icons: "comic", theme: "dark", scale: "100", accent: "orange", updates: "off" };
   const SET_SCALES = ["90", "100", "110", "125"];
   const SET_ACCENTS = [["orange", "Оранжевый", "#f28a1e"], ["blue", "Синий", "#4c8df6"], ["violet", "Фиолетовый", "#9d80f2"], ["teal", "Бирюзовый", "#19b5a3"]];
   const uiZoom = () => parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
@@ -47,9 +47,9 @@
       '<p class="set-note">' + esc(tl("Другие настройки появятся позже")) + '</p>';
     setPanel.innerHTML = '<div class="dw"><div class="dw-head"><h2 id="set-title">☰ ' + esc(tl("Настройки")) + '</h2>' +
       '<button type="button" class="dw-close" data-set="close" aria-label="' + esc(tl("Закрыть")) + '">✕</button>' +
-      '<div class="set-tabs" role="tablist">' + tabBtn("interface", "Интерфейс") + tabBtn("langs", "Языки") + '</div></div>' +
+      '<div class="set-tabs" role="tablist">' + tabBtn("interface", "Интерфейс") + tabBtn("langs", "Языки") + tabBtn("updates", "Обновления") + '</div></div>' +
       '<div class="dw-body">' + (setMsg ? '<p class="set-msg" role="alert">' + esc(setMsg) + '</p>' : "") + (setOk ? '<p class="set-ok" role="status">' + esc(setOk) + '</p>' : "") +
-      (setTab === "langs" ? langsBody : "") + (setTab === "langs" ? "" : '' +
+      (setTab === "langs" ? langsBody : "") + (setTab === "updates" ? updBody(u, chip) : "") + (setTab !== "interface" ? "" : '' +
       '<section class="set-sec"><h3>' + esc(tl("Стили интерфейса")) + '</h3><div class="set-opts">' + styles + '</div>' +
         '<p class="set-note">' + esc(tl("Другие стили появятся позже")) + '</p></section>' +
       '<section class="set-sec"><h3>' + esc(tl("Общий стиль")) + '</h3><div class="set-opts">' +
@@ -58,6 +58,38 @@
       '<section class="set-sec"><button type="button" class="svc-btn" data-set="reset"' + (isBase || setBusy ? " disabled" : "") + '>' + esc(tl("Вернуть базовые настройки")) + '</button>' +
         '<p class="set-note">' + esc(tl("Прежние значки-символы, тёмный стиль, размер 100 % и оранжевый акцент")) + '</p></section>') +
       '</div></div>';
+  }
+  // Обновления программы: переключатель (по умолчанию выключен), состояние последней проверки, «Проверить сейчас» и «Обновить».
+  const UPD_TEXT = { off: "Проверка выключена: программа не обращается к GitHub за обновлениями.", checking: "Идёт проверка…",
+    current: "Установлена последняя версия.", available: "Есть обновление.", ahead: "В папке программы есть свои коммиты, которых нет на GitHub: обновление кнопкой невозможно.",
+    diverged: "Папка программы разошлась с GitHub (свои коммиты и новые коммиты там): обновление кнопкой невозможно.",
+    unavailable: "Проверка недоступна", error: "Проверка не удалась", updated: "Программа обновлена." };
+  function updBody(u, chip) {
+    const U = (window.BOARD && window.BOARD.updates) || {}, on = u.updates === "on", st = UPD_TEXT[U.state] ? U.state : "off";
+    const line = esc(tl(UPD_TEXT[st])) + (st === "available" ? " " + esc(tl("Новых коммитов")) + ": " + (U.behind | 0) + "." : "") +
+      (U.error && (st === "unavailable" || st === "error") ? ": " + esc(U.error) : "");
+    return '<section class="set-sec"><h3>' + esc(tl("Проверка обновлений")) + '</h3><div class="set-row">' +
+      chip("updates", "off", esc(tl("Выключена")), !on) + chip("updates", "on", esc(tl("Включена")), on) + '</div>' +
+      '<p class="set-note">' + esc(tl("Когда включена, Пульт при запуске и при синхронизации спрашивает GitHub, есть ли новая версия программы. Обновляет только по кнопке; ваши данные не трогает.")) + '</p></section>' +
+      '<section class="set-sec"><h3>' + esc(tl("Состояние")) + '</h3><p class="upd-line upd-' + st + '">' + line + '</p>' +
+      (U.source && on ? '<p class="set-note">' + esc(tl("Источник")) + ': ' + esc(U.source) + (U.checked ? " · " + esc(tl("проверено")) + " " + esc(stamp(U.checked)) : "") + '</p>' : "") +
+      (U.restart ? '<p class="set-ok">' + esc(tl("Закройте окно Пульта и запустите его снова, чтобы работала новая версия.")) + '</p>' : "") +
+      '<div class="set-row">' + (on ? '<button type="button" class="svc-btn" data-upd="check"' + (setBusy || st === "checking" ? " disabled" : "") + '>' + esc(tl("Проверить сейчас")) + '</button>' : "") +
+      (on && st === "available" ? '<button type="button" class="svc-btn" data-upd="apply"' + (setBusy ? " disabled" : "") + '>' + esc(tl("Обновить программу")) + '</button>' : "") + '</div></section>';
+  }
+  async function updAction(kind) {
+    if (!token) { setMsg = tl("Кнопка работает, когда Пульт открыт ярлыком «XControlP» на рабочем столе."); renderSettings(); return; }
+    setMsg = ""; setOk = ""; setBusy = true; renderSettings();
+    let res = {};
+    try {
+      const r = await fetch("/update/" + (kind === "apply" ? "apply" : "check"), { method: "POST", headers: { "X-Pult-Token": token } });
+      res = await r.json().catch(() => ({ ok: false, error: tl("ответ ") + r.status }));
+    } catch (err) { res = { ok: false, error: String(err && err.message || err) }; }
+    setBusy = false;
+    if (res.updates && window.BOARD) window.BOARD.updates = res.updates;
+    if (kind === "apply" && res.ok) setOk = tl("Обновлено") + ": " + (res.before || "") + " → " + (res.after || "");
+    else if (!res.ok) setMsg = res.error || tl("Проверка не удалась");
+    renderSettings(); refresh();
   }
   function openSettings() {
     if (!setPanel) return;
@@ -89,11 +121,12 @@
   }
   async function settingsAction(v) {
     const [cmd, arg] = String(v || "").split(":");
-    if (cmd === "open") { setTab = arg === "langs" ? "langs" : "interface"; openSettings(); }
-    else if (cmd === "tab") { setTab = arg === "langs" ? "langs" : "interface"; setMsg = ""; setOk = ""; renderSettings(); }
+    const tabOf = (a) => a === "langs" || a === "updates" ? a : "interface";
+    if (cmd === "open") { setTab = tabOf(arg); openSettings(); }
+    else if (cmd === "tab") { setTab = tabOf(arg); setMsg = ""; setOk = ""; renderSettings(); }
     else if (cmd === "close") { if (setPanel && setPanel.open) setPanel.close(); }
     else if (cmd === "reset") { if (await saveSettings({ icons: "base", theme: "dark", scale: "100", accent: "orange" })) { setOk = tl("Базовые настройки возвращены"); renderSettings(); } }
-    else if (cmd === "icons" || cmd === "theme" || cmd === "scale" || cmd === "accent") saveSettings({ [cmd]: arg });
+    else if (cmd === "icons" || cmd === "theme" || cmd === "scale" || cmd === "accent" || cmd === "updates") saveSettings({ [cmd]: arg });
   }
   if (setPanel) {
     setPanel.addEventListener("click", (e) => { if (e.target === setPanel) setPanel.close(); });
@@ -344,6 +377,8 @@
     if (rs && !rs.disabled) { rsAction(rs.dataset.rs); return; }
     const rp = e.target.closest("[data-rp]");
     if (rp && !rp.disabled) { rpAction(rp.dataset.rp); return; }
+    const ux = e.target.closest("[data-upd]");
+    if (ux && !ux.disabled) { updAction(ux.dataset.upd); return; }
     const sx = e.target.closest("[data-set]");
     if (sx && !sx.disabled) { settingsAction(sx.dataset.set); return; }
     const dg = e.target.closest("[data-dg]");

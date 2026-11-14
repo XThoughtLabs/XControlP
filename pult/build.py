@@ -74,6 +74,7 @@ def build():
         data["research"] = read_research()
         data["reports"] = read_reports(data)
         data["digests"] = digest_view()
+        data["updates"] = updates_view()
         text = "window.BOARD = " + json.dumps(data, ensure_ascii=False, indent=1) + ";\n"
     except (OSError, ValueError) as exc:
         data = None
@@ -121,6 +122,7 @@ def stamps():
         except OSError:
             result.append((str(path), None, None))
     result.append(("digests", digest_stamp(), None))
+    result.append(("updates", update_stamp(), None))
     return result
 
 
@@ -160,3 +162,4 @@ from .services import (read_services)  # noqa: E402
 from .research import (read_research)  # noqa: E402
 from .reports import (git_root, monthly_dir, read_reports, reports_dir)  # noqa: E402
 from .digests import (digest_stamp, digest_view)  # noqa: E402
+from .updates import (stamp as update_stamp, view as updates_view)  # noqa: E402

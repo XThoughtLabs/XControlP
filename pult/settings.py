@@ -19,12 +19,13 @@ def read_translations():
 
 # Настройки окна: язык, стиль значков, общий стиль. Чужие значения не принимаются.
 # Стили значков — подпапки icons со своим style.json; «base» — прежние символы, картинок не нужно.
-SETTING_DEFAULTS = {"lang": "ru", "icons": "comic", "theme": "dark", "scale": "100", "accent": "orange"}
+SETTING_DEFAULTS = {"lang": "ru", "icons": "comic", "theme": "dark", "scale": "100", "accent": "orange", "updates": "off"}
 
 
 def setting_choices():
     return {"lang": LANGS, "icons": ("base",) + tuple(icon_styles()), "theme": ("dark", "light"),
-            "scale": ("90", "100", "110", "125"), "accent": ("orange", "blue", "violet", "teal")}
+            "scale": ("90", "100", "110", "125"), "accent": ("orange", "blue", "violet", "teal"),
+            "updates": ("off", "on")}
 
 
 def read_settings():

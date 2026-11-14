@@ -262,6 +262,8 @@ The week in the window starts on Sunday.
 
 With git: `git pull` in the folder. Without git: download the new version and replace the program files (section 2, «the program»). Your data files are not part of XControlP and are not touched either way. Close the window first.
 
+**The update check in the program** (only for a folder that is a git clone): in **Settings** → **Updates**, switch the check on. Then, at start and at «Sync data», the program asks GitHub in the background about the branch the folder follows (for a fork, the remote `upstream`, if it is set), and **Update available** appears in the menu. **Update the program** does only a fast-forward (`git merge --ff-only`) and only when the program files have no local changes; git does not track the data files, so they are not touched. After an update, close the window and start the program again. The check is off by default, and then the program runs no git command for updates.
+
 ## 10. When something does not work
 
 | What you see | What to do |

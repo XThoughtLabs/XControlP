@@ -317,7 +317,8 @@ window.BOARD = {
   "icons": "comic",
   "theme": "dark",
   "scale": "100",
-  "accent": "orange"
+  "accent": "orange",
+  "updates": "off"
  },
  "icon_styles": [
   {
@@ -621,5 +622,15 @@ window.BOARD = {
    "error": ""
   },
   "unpushed": null
+ },
+ "updates": {
+  "state": "off",
+  "behind": 0,
+  "ahead": 0,
+  "source": "",
+  "error": "",
+  "checked": "",
+  "restart": false,
+  "enabled": false
  }
 };

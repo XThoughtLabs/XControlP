@@ -14,6 +14,7 @@ def run_sync():
         collector = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(collector)
         auto = collector.collect(fetch=True)
+        updates = check_in_background()
         calendar = calendar_sync_quiet()
         digest = digest_sync()
         data = build() or {}
@@ -32,7 +33,8 @@ def run_sync():
                 line.update(stage=stages[now] if stages else "", moved=now != was, was=stages[was] if now != was and stages else "")
             lines.append(line)
         return {"ok": True, "synced": auto.get("synced"), "seconds": auto.get("seconds"), "projects": lines,
-                "notes": auto.get("notes", []), "events": new_events, "calendar": calendar, "digest": digest}
+                "notes": auto.get("notes", []), "events": new_events, "calendar": calendar, "digest": digest,
+                "updates_check": updates}
 
 
 SYNC_GATE = threading.Lock()          # одна синхронизация за раз: по кнопке или при запуске
@@ -64,3 +66,4 @@ def startup_sync_request():
 from .calendar_glue import (calendar_sync_quiet)  # noqa: E402
 from .build import (SYNC_LOCK, build, effective_stages, read_auto)  # noqa: E402
 from .digests import (digest_sync)  # noqa: E402
+from .updates import (check_in_background)  # noqa: E402

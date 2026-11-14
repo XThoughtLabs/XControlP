@@ -331,7 +331,10 @@
     const navBtn = ([key, icon, label, count]) =>
       '<button type="button" data-view="' + esc(key) + '" class="' + (state.view === key ? "active" : "") + '"><span class="icon">' + navIcon(NAV_ICON[key], icon) + '</span>' + esc(label) +
       '<span class="count">' + count + '</span></button>';
-    let html = navBtn(items[0]) + navBtn(["calendar", "▤", tl("Календарь"), calTodayCount()]) + navBtn(["day", "☑", tl("План дня"), dayLeftCount()]) + navBtn(["review", "▥", tl("Итоги дней"), rvWeekPercent()]) +
+    const upd = (window.BOARD && window.BOARD.updates) || {};
+    let html = (upd.restart ? '<button type="button" class="nav-upd done" data-set="open:updates">↻ ' + esc(tl("Перезапустите Пульт")) + '</button>'
+      : upd.state === "available" ? '<button type="button" class="nav-upd" data-set="open:updates">⬆ ' + esc(tl("Есть обновление")) + ' · ' + (upd.behind | 0) + '</button>' : "") +
+      navBtn(items[0]) + navBtn(["calendar", "▤", tl("Календарь"), calTodayCount()]) + navBtn(["day", "☑", tl("План дня"), dayLeftCount()]) + navBtn(["review", "▥", tl("Итоги дней"), rvWeekPercent()]) +
       navBtn(["stats", "▧", tl("Статистика"), ""]) + navBtn(["digest", "✉", tl("Сводки"), dgCount()]) +
       navBtn(["reports", "▨", tl("Отчёты"), rpAll().length]) + navBtn(["proposals", "✧", tl("Предложения"), prOpen()]) + items.slice(1).map(navBtn).join("");
     board.ideaSets.forEach((set, i) => {

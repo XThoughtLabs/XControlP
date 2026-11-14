@@ -908,3 +908,9 @@
   @container pmain (max-width: 624px) {
     .dg-wrap { grid-template-columns: 1fr; }
   }
+  /* Обновления программы (XCP-25): значок в меню и строка состояния в «Настройках». */
+  nav button.nav-upd { background: color-mix(in srgb, var(--good) 22%, transparent); color: var(--text); font-weight: 700; justify-content: center; }
+  nav button.nav-upd.done { background: color-mix(in srgb, var(--serious) 22%, transparent); }
+  .upd-line { margin: 4px 0 8px; }
+  .upd-line.upd-available, .upd-line.upd-updated { color: var(--good); font-weight: 700; }
+  .upd-line.upd-error, .upd-line.upd-diverged, .upd-line.upd-ahead { color: var(--serious); }

@@ -109,7 +109,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                    "/settings": lambda: save_settings(query), "/alerts": lambda: save_alert(query),
                    "/digest/mark": lambda: digest_mark(query), "/idea/flag": lambda: save_flag(query),
                    "/idea/service-remove": lambda: remove_service(query), "/report/reveal": lambda: reveal_report(query),
-                   "/proposal": lambda: save_proposal(query)}
+                   "/proposal": lambda: save_proposal(query), "/update/check": update_check_now, "/update/apply": update_apply}
         if path not in actions and path not in ("/day/op", "/request"):
             self.send_error(404)
             return
@@ -168,4 +168,5 @@ from .reports import (reveal_report)  # noqa: E402
 from .build import (SYNC_LOCK, rebuild_if_changed)  # noqa: E402
 from .sync import (startup_sync_request, sync_request)  # noqa: E402
 from .digests import (digest_mark)  # noqa: E402
+from .updates import (update_apply, update_check_now)  # noqa: E402
 from .day_glue import (day_op, day_review, day_view)  # noqa: E402

@@ -32,6 +32,8 @@ jobs:
           python -B day_test.py
       - name: Optional keys checks (digest topics, icon names)
         run: python -B tests/keys_test.py
+      - name: Update check (temporary local repositories, git)
+        run: python -B tests/update_test.py
       - name: Window checks (Node, no browser)
         run: node tests/window_test.js
       - name: Oracle (sample data, fixed date)

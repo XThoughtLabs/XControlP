@@ -83,4 +83,6 @@ How the assistant does its part: [Working with an assistant](assistant.md).
 
 The ☰ button next to the language opens **Settings**: language (English, Russian, Hebrew; in Hebrew the window is mirrored), icon style (comic stickers or simple symbols), theme (dark or light), text size and accent colour. They are saved in `settings.json`.
 
+The **Updates** tab switches on the check for a new version of the program; it is off by default (section 9 of [Setup](setup.md)).
+
 In the window, «HQ» (штаб) means your assistant's chat.
