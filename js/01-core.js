@@ -49,16 +49,27 @@
   };
   const STATUS_LABEL = { work: tl("В работе"), pause: tl("На паузе"), stop: tl("Остановлен"), plan: tl("План") };
   const SHARE_COLORS = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)"];
-  const GROUP_ICON = { "Технологии": "⚙", "Учёба": "◎", "Книги": "✎", "Философия": "◈", "Игры": "⚑", "Развитие": "↗" };
+  // Словари, в которых ищут по именам из данных, — без прототипа: группа «constructor» или «toString» — обычный ключ.
+  const GROUP_ICON = Object.assign(Object.create(null), { "Технологии": "⚙", "Учёба": "◎", "Книги": "✎", "Философия": "◈", "Игры": "⚑", "Развитие": "↗" });
   // Значки меню — картинки из папки icons (их отдаёт программа). Нет картинки — остаётся символ.
-  const NAV_ICON = { all: "obzor", calendar: "calendar", day: "dayplan", review: "review", stats: "stats", digest: "digest", reports: "reports",
+  const NAV_ICON = Object.assign(Object.create(null), { all: "obzor", calendar: "calendar", day: "dayplan", review: "review", stats: "stats", digest: "digest", reports: "reports",
     "Технологии": "tech", "Учёба": "study", "Книги": "books", "Философия": "philosophy", "Игры": "games", "Развитие": "growth",
-    services: "services", research: "research", "idea-stats": "idea-stats", perf: "perf", alerts: "alerts" };
-  const SET_ICON = { hq: "ideas", main: "ideas" };
+    services: "services", research: "research", "idea-stats": "idea-stats", perf: "perf", alerts: "alerts" });
+  const SET_ICON = Object.assign(Object.create(null), { hq: "ideas", main: "ideas" });
   // Значки из данных: ключ icons в projects.json дополняет встроенные — groups: {"Группа": {"symbol": "◆", "image": "имя"}},
-  // idea_sets: {"id набора идей": "имя"}, reports: {"id раздела отчёта": "имя"}. Имя картинки — латиница, цифры, дефис.
-  const ICON_NAME_RE = /^[a-z0-9][a-z0-9-]{0,40}$/;
+  // idea_sets: {"id набора идей": "имя"}, reports: {"id раздела отчёта": "имя"}. Имя картинки — латиница, цифры, дефис,
+  // до 40 знаков, как у сервера (ICON_PATH в pult/settings.py). При каждой нормализации словари собираются заново:
+  // встроенные значки, потом значки из данных, так что удалённая настройка перестаёт действовать сразу.
+  // Группа с именем встроенного раздела (all, calendar, …) картинку этого раздела не заменяет.
+  const ICON_NAME_RE = /^[a-z0-9][a-z0-9-]{0,39}$/;
+  let ICON_BASE = null;   // [словарь, его встроенная копия]; снимается при первом вызове, когда все файлы окна загружены
+  let VIEW_KEYS = null;
   function applyDataIcons(data) {
+    if (!ICON_BASE) {
+      ICON_BASE = [GROUP_ICON, NAV_ICON, SET_ICON, RP_ICON].map((map) => [map, Object.freeze(Object.assign({}, map))]);
+      VIEW_KEYS = new Set(Object.keys(NAV_ICON).filter((key) => !Object.prototype.hasOwnProperty.call(GROUP_ICON, key)));
+    }
+    ICON_BASE.forEach(([map, base]) => { Object.keys(map).forEach((key) => { delete map[key]; }); Object.assign(map, base); });
     const icons = data && data.icons && typeof data.icons === "object" && !Array.isArray(data.icons) ? data.icons : {};
     const each = (part, fn) => {
       const map = icons[part];
@@ -67,7 +78,7 @@
     each("groups", (name, v) => {
       if (!v || typeof v !== "object") return;
       if (typeof v.symbol === "string" && v.symbol.length > 0 && v.symbol.length <= 4) GROUP_ICON[name] = v.symbol;
-      if (typeof v.image === "string" && ICON_NAME_RE.test(v.image)) NAV_ICON[name] = v.image;
+      if (typeof v.image === "string" && ICON_NAME_RE.test(v.image) && !VIEW_KEYS.has(name)) NAV_ICON[name] = v.image;
     });
     each("idea_sets", (id, v) => { if (typeof v === "string" && ICON_NAME_RE.test(v)) SET_ICON[id] = v; });
     each("reports", (id, v) => { if (typeof v === "string" && ICON_NAME_RE.test(v)) RP_ICON[id] = v; });
@@ -81,7 +92,7 @@
   }
   function iconImg(style, name, sym) {
     const key = style + "/" + name;
-    if (!name || style === "base" || location.protocol !== "http:" || ICON_MISSING.has(key)) return sym;
+    if (!name || style === "base" || location.protocol !== "http:" || ICON_MISSING.has(key)) return esc(sym);
     return '<img src="/icons/' + style + '/' + name + '.png" alt="" draggable="false" data-ic="' + key + '" data-sym="' + esc(sym) + '">';
   }
   function navIcon(name, sym) { return iconImg(iconStyle(), name, sym); }
@@ -149,7 +160,8 @@
     LANG === "he" ? "לפני " + n + " " + plural(n, "день", "дня", "дней") : n + " " + plural(n, "день", "дня", "дней") + tl(" назад");
 
   // Данные (названия проектов, групп, этапов, описания, события) — из translations.json через data.js.
-  let DATA_TR = {};
+  // Словарь без прототипа: название «constructor» или «toString» переводится как обычная строка.
+  let DATA_TR = Object.create(null);
   const EVENT_PREFIX = ["Пройден блок", "Начат блок", "Слит", "Начат"];
   // Идеи: перевод только целой строкой из translations.json; оригинал в базе идей не меняется; нет перевода — по-русски.
   const trIdea = (s) => (LANG === "ru" || typeof s !== "string" || !s || DATA_TR[s] == null) ? s : DATA_TR[s];
@@ -168,7 +180,8 @@
   function tdt(s) { const d = td(s); return d !== s ? d : tl(s); }
 
   function normalize(data) {
-    DATA_TR = (data.translations && data.translations[LANG]) || {};
+    const tr = data.translations && data.translations[LANG];
+    DATA_TR = Object.assign(Object.create(null), tr && typeof tr === "object" ? tr : {});
     applyDataIcons(data);
     const projects = (data.projects || []).map((p) => {
       const stages = (Array.isArray(p.stages) ? p.stages : []).map(td);

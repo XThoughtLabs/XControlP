@@ -305,6 +305,33 @@ def main():
           and day_cli.read_timezone(f3 / "нет-такой-папки") == "")
     shutil.rmtree(f3, ignore_errors=True)
 
+    # Сама команда без --day: дата по поясу из projects.json (связка read_timezone → zone_today → local_today)
+    def zone_date(zone):
+        try:
+            from zoneinfo import ZoneInfo
+            return datetime.datetime.now(ZoneInfo(zone)).date().isoformat()
+        except Exception:                 # нет базы поясов: day.py тоже берёт часы компьютера
+            return datetime.date.today().isoformat()
+
+    def default_day(zone):
+        f4, _ = fresh()
+        (f4 / "projects.json").write_text(json.dumps(dict(FIXTURE, timezone=zone), ensure_ascii=False), encoding="utf-8")
+        before = zone_date(zone)
+        out = subprocess.run([sys.executable, str(f4 / "day.py"), "add", "--task", "проверка пояса"], capture_output=True,
+                             text=True, encoding="utf-8", env=env, cwd=str(f4))
+        after = zone_date(zone)
+        sent = sorted((f4 / "day-inbox").glob("*.json"))
+        day = json.loads(sent[-1].read_text(encoding="utf-8"))["ops"][0]["day"] if out.returncode == 0 and len(sent) == 1 else None
+        shutil.rmtree(f4, ignore_errors=True)
+        return day in (before, after), f"{zone}: {day} (ждали {before}) {out.stderr}{out.stdout}"
+
+    east_ok, east_info = default_day("Pacific/Kiritimati")
+    west_ok, west_info = default_day("Etc/GMT+12")
+    if east:
+        check("K79 day.py add без --day — сегодня в поясе из projects.json", east_ok and west_ok, east_info + " · " + west_info)
+    else:
+        check("K79 нет базы поясов — day.py add без --day берёт часы компьютера", east_ok and west_ok, east_info + " · " + west_info)
+
     print(f"\nПройдено {len(PASSED)}, не пройдено {len(FAILED)}" + (": " + ", ".join(FAILED) if FAILED else ""))
     shutil.rmtree(folder, ignore_errors=True)
     return 1 if FAILED else 0

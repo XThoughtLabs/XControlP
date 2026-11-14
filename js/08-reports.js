@@ -16,8 +16,8 @@
   const rpOrig = (r) => { const o = r && r.data && r.data.original; return o === "ru" || o === "en" || o === "he" ? o : (/^Недельный отчёт /.test(String((r && r.file) || "")) ? "ru" : "en"); };
   const RP_ORIG_NOTE = { ru: "Оригинал отчёта — на русском", en: "Оригинал отчёта — на английском", he: "Оригинал отчёта — на иврите" };
   const rpNum = (n, dec) => typeof n === "number" ? n.toLocaleString(RP_LOC, { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 }) : String(n == null ? "" : n);
-  const RP_ICON = { summary: "obzor", tech: "tech", study: "study", services: "services", day: "dayplan", code: "stats",
-    ideas: "ideas", resources: "perf", decisions: "digest", risks: "alerts", proposals: "growth", rating: "review" };
+  const RP_ICON = Object.assign(Object.create(null), { summary: "obzor", tech: "tech", study: "study", services: "services", day: "dayplan", code: "stats",
+    ideas: "ideas", resources: "perf", decisions: "digest", risks: "alerts", proposals: "growth", rating: "review" });   // без прототипа, как GROUP_ICON
   const RP_KPI = { commits: "Коммиты", repos: "Репозиториев с коммитами", tasks: "Задач в плане дня", done_pct: "Сделано задач", day_rating: "Оценка дней",
     lessons: "Уроков", ideas_new: "Новых идей", hq_rating: "Оценка штаба" };
   const RP_TONE = { good: "var(--good)", warn: "var(--warning)", bad: "var(--critical)" };

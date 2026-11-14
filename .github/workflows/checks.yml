@@ -25,5 +25,9 @@ jobs:
         run: python -B tools/check_repo.py
       - name: Day plan checks
         run: python -B day_test.py
+      - name: Optional keys checks (digest topics, icon names)
+        run: python -B tests/keys_test.py
+      - name: Window checks (Node, no browser)
+        run: node tests/window_test.js
       - name: Oracle (sample data, fixed date)
         run: python -B tests/oracle/run_oracle.py check

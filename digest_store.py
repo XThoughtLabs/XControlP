@@ -55,7 +55,7 @@ def extra_topics(topics):
     result = {}
     if isinstance(topics, dict):
         for key, label in topics.items():
-            if isinstance(key, str) and re.match(r"^[a-z0-9][a-z0-9-]{0,40}$", key) and isinstance(label, str) \
+            if isinstance(key, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{0,40}", key) and isinstance(label, str) \
                     and label.strip() and len(label) <= 80 and key not in TOPICS:
                 result[key] = label.strip()
     return result
@@ -68,6 +68,11 @@ class Digests:
         self.repo = pathlib.Path(os.path.expanduser(value)) if value else None   # None — сводки не настроены
         self.lock = threading.RLock()        # отметки, коммиты, pull и push — по одному
         self.last_push = {"ok": None, "at": "", "error": ""}
+
+    def set_topics(self, topics):
+        """Сменились свои темы (digest_topics): то же хранилище — та же блокировка и то же состояние отправки.
+        Словарь тем заменяется целиком, одним присваиванием, без блокировки: идущая отправка не задерживает сборку окна."""
+        self.topics = dict(TOPICS, **extra_topics(topics))
 
     # ------------------------------------------------------------ git
 

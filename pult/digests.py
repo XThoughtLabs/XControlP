@@ -37,7 +37,8 @@ def digest_topics():
 
 def digest_store():
     """Сводки (digest_store.py рядом с Пультом): модуль загружается один раз, хранилище создаётся заново,
-    когда сменился репозиторий сводок. Не загрузилось — None (причина в DIGEST_PROBLEM)."""
+    когда сменился репозиторий сводок; сменились только свои темы — темы меняются в том же хранилище
+    (одна блокировка на репозиторий). Не загрузилось — None (причина в DIGEST_PROBLEM)."""
     if not _DIGEST:
         module = None
         if DIGEST_MODULE.is_file():
@@ -53,7 +54,7 @@ def digest_store():
     if entry["module"] is None:
         return None
     repo, topics = digest_repo(), digest_topics()
-    if entry["store"] is None or entry["repo"] != repo or entry["topics"] != topics:
+    if entry["store"] is None or entry["repo"] != repo:
         try:
             entry["store"] = entry["module"].Digests(repo, topics)
         except Exception as exc:
@@ -61,6 +62,9 @@ def digest_store():
             entry["store"] = None
             return None
         entry["repo"], entry["topics"] = repo, topics
+    elif entry["topics"] != topics:
+        entry["store"].set_topics(topics)
+        entry["topics"] = topics
     return entry["store"]
 
 

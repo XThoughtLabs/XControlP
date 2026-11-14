@@ -129,6 +129,8 @@
   // Отметки «Интересно» и «Полезно» программа Пульта пишет в репозиторий и сразу отправляет на GitHub.
   const DG_TOPIC = { "llm-models": tl("Модели"), "llm-research": tl("Исследования и продукты"), "agents-memory": tl("Агенты и память"),
     "security-storage": tl("Утечки и защита"), "hardware": tl("Железо") };
+  // Подпись темы — только из своих ключей словаря: тема «constructor» или «toString» — обычный id.
+  const dgOwn = (map, key) => map && typeof map === "object" && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined;
   const dgData = () => (window.BOARD && window.BOARD.digests) || { ok: false, error: "", digests: [] };
   function dgCount() { return (dgData().digests || []).length; }
   const dgFmt = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ""); return m ? m[3] + "." + m[2] + "." + m[1] : String(d || ""); };
@@ -155,7 +157,7 @@
       const btn = (kind, label) => '<button type="button" class="dg-mark' + (mk[kind] ? " on" : "") + '" aria-pressed="' + !!mk[kind] + '" data-dg="mark:' +
         esc(cur.date) + ':' + esc(it.id) + ':' + kind + ':' + (mk[kind] ? 0 : 1) + '">' + esc(label) + '</button>';
       return '<article class="dg-item"><div class="dg-head"><span class="dg-n">' + (i + 1) + '</span>' +
-        (it.topic ? '<span class="dg-topic">' + esc(DG_TOPIC[it.topic] || td((dgData().topics || {})[it.topic]) || it.topic) + '</span>' : "") + '<h3>' + esc(dgTr(it, "title")) + '</h3></div>' +
+        (it.topic ? '<span class="dg-topic">' + esc(dgOwn(DG_TOPIC, it.topic) || td(dgOwn(dgData().topics, it.topic)) || it.topic) + '</span>' : "") + '<h3>' + esc(dgTr(it, "title")) + '</h3></div>' +
         (it.summary ? '<p>' + esc(dgTr(it, "summary")) + '</p>' : "") +
         (it.why ? '<p class="dg-why"><b>' + esc(tl("Почему важно тебе:")) + '</b> ' + esc(dgTr(it, "why")) + '</p>' : "") +
         '<div class="dg-foot">' + (it.url ? '<a href="' + esc(it.url) + '" target="_blank" rel="noopener noreferrer">' + esc(it.source || it.url) + '</a>' : esc(it.source || "")) +

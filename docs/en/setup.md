@@ -116,9 +116,9 @@ Fields of the file:
 | `ideas_files` | idea files ([section 5](#5-ideas)) |
 | `reports_dir`, `monthly_reports_dir` | report folders ([section 7](#7-reports-research-and-digests)) |
 | `digest_repo` | folder of the digests repository ([section 7](#7-reports-research-and-digests)) |
-| `digest_topics` | your own digest topics besides the built-in ones: `{"robotics": "Robotics"}`; labels translate through `translations.json` (optional) |
-| `icons` | your own menu icons: `{"groups": {"Work": {"symbol": "◆", "image": "tech"}}, "idea_sets": {"main": "ideas"}, "reports": {"summary": "study"}}`; an image name is a picture of the icons folder (Latin letters, digits, hyphen) (optional) |
-| `timezone` | time zone for the default day of `day.py`, for example `Asia/Jerusalem`; without it, or if the name is wrong, the computer's clock (on Windows Python needs the `tzdata` package for zones) (optional) |
+| `digest_topics` | your own digest topics besides the built-in ones: `{"robotics": "Robotics"}`; a topic id is 1 to 41 characters of lowercase Latin letters, digits and hyphens, starting with a letter or a digit, and cannot replace a built-in id; a label is 1 to 80 characters; labels translate through `translations.json` (optional) |
+| `icons` | your own menu icons: `{"groups": {"Work": {"symbol": "◆", "image": "tech"}}, "idea_sets": {"main": "ideas"}, "reports": {"summary": "study"}}`; a group symbol is 1 to 4 characters; an image name is a picture of the icons folder: 1 to 40 characters of lowercase Latin letters, digits and hyphens, starting with a letter or a digit; a group named like a built-in section (for example `calendar`) gets no image (optional) |
+| `timezone` | time zone for the default day of `day.py`, as an IANA zone name, for example `Asia/Jerusalem`; without it, or if the name is wrong, the computer's clock (on Windows Python needs the `tzdata` package for zones) (optional) |
 
 Fields of a project:
 
