@@ -169,7 +169,8 @@ class Digests:
 
     def view(self):
         """Всё для окна: сводки (сначала новые) с отметками, ошибки чтения, состояние отправки на GitHub."""
-        result = {"ok": False, "error": "", "repo": str(self.repo or ""), "topics": self.topics, "digests": [],
+        topics = self.topics                 # один раз за сборку: set_topics() может тем временем заменить словарь
+        result = {"ok": False, "error": "", "repo": str(self.repo or ""), "topics": topics, "digests": [],
                   "push": dict(self.last_push), "unpushed": None}
         if self.repo is None:
             return result                    # не настроено: пустой раздел, без git
@@ -188,7 +189,7 @@ class Digests:
                 result["digests"].append({"date": date, "error": "Файл сводки не читается: " + str(exc),
                                           "items": [], "unverified": [], "marks": {}})
                 continue
-            items = [it for it in (self.item(x, date, i + 1, self.topics) for i, x in enumerate(raw.get("items") or [])) if it and it["title"]]
+            items = [it for it in (self.item(x, date, i + 1, topics) for i, x in enumerate(raw.get("items") or [])) if it and it["title"]]
             unverified = [str(u).strip() for u in (raw.get("unverified") or []) if str(u).strip()]
             unverified_tr = {}
             raw_u = raw.get("unverified_i18n")

@@ -160,10 +160,10 @@
   "type": "text/css; charset=utf-8"
  },
  {
-  "bytes": 50618,
+  "bytes": 50754,
   "method": "GET",
   "path": "/js/01-core.js",
-  "sha256": "491a0165e61936582ff3c1223388dcc79f01e9b670b12fb1fee838e2eb598367",
+  "sha256": "471fae5ba9869dfa9c48fba8b9738d90baf59c4ef3d308400427d2ff1948074d",
   "status": 200,
   "step": "G19",
   "type": "text/javascript; charset=utf-8"

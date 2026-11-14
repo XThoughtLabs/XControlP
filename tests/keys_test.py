@@ -5,8 +5,9 @@ standard library only).
     python -B tests/keys_test.py        exit 0: every check passes; exit 1: a check failed
 
 Each check tries to break one rule. Nothing is written outside a temporary folder; no git command and no
-network call runs (the digest store is created, never asked to read, pull or push).
+network call runs (the digest store reads only a temporary folder; its git calls are replaced in T6).
 """
+import datetime
 import json
 import os
 import pathlib
@@ -98,6 +99,50 @@ def main():
     window = [bool(re.search(found.group(1), n)) for n in (n40, n41)] if found else None
     check("T4 image name: 40 characters taken, 41 refused, by the server and by the window",
           server == [True, False] and window == [True, False], f"server {server}, window {window}")
+
+    # T5: set_topics() replaces the topics dict and never changes it in place, so a view that already holds
+    # the old dict keeps one consistent set (the reason set_topics() needs no lock).
+    store = digest_store.Digests(None, {"robotics": "Robotics"})
+    old = store.topics
+    store.set_topics({"robotics": "Robots"})
+    check("T5 set_topics() replaces the topics, the old dict stays as it was",
+          store.topics is not old and old.get("robotics") == "Robotics" and store.topics.get("robotics") == "Robots",
+          f"same dict: {store.topics is old}, old: {old.get('robotics')!r}, new: {store.topics.get('robotics')!r}")
+
+    # T6: view() reads the topics once, so one data.js never mixes two topic sets.
+    class Counting(digest_store.Digests):
+        reads = 0
+
+        @property
+        def topics(self):
+            type(self).reads += 1
+            return self._topics
+
+        @topics.setter
+        def topics(self, value):
+            self._topics = value
+
+    def no_git(*args, **kwargs):
+        raise digest_store.DigestError("no git in this test")
+
+    folder = pathlib.Path(tempfile.mkdtemp(prefix="keys-test-"))
+    try:
+        (folder / ".git").mkdir()
+        today = datetime.date.today()
+        day_file = folder / "digests" / f"{today:%Y}" / f"{today:%m}" / f"{today:%Y-%m-%d}.json"
+        day_file.parent.mkdir(parents=True)
+        day_file.write_text(json.dumps({"items": [{"title": f"item {n}", "topic": "robotics"} for n in range(3)]}),
+                            encoding="utf-8")
+        counting = Counting(str(folder), {"robotics": "Robotics"})
+        counting.git = no_git
+        Counting.reads = 0
+        shown = counting.view()
+        items = [it for d in shown.get("digests", []) for it in d.get("items", [])]
+        check("T6 view() reads the topics once per view",
+              Counting.reads == 1 and len(items) == 3 and all(it["topic"] == "robotics" for it in items),
+              f"reads: {Counting.reads}, items: {len(items)}, ok: {shown.get('ok')}")
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
 
     print(f"\nPassed {len(PASSED)}, failed {len(FAILED)}" + (": " + ", ".join(FAILED) if FAILED else ""))
     return 1 if FAILED else 0

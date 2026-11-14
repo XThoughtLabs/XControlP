@@ -305,7 +305,8 @@ def main():
           and day_cli.read_timezone(f3 / "нет-такой-папки") == "")
     shutil.rmtree(f3, ignore_errors=True)
 
-    # Сама команда без --day: дата по поясу из projects.json (связка read_timezone → zone_today → local_today)
+    # Сама команда без --day: дата по поясу из projects.json (связка read_timezone → zone_today → local_today);
+    # команда запускается из другой папки, где projects.json называет другой пояс: пояс берётся из папки программы
     def zone_date(zone):
         try:
             from zoneinfo import ZoneInfo
@@ -313,20 +314,23 @@ def main():
         except Exception:                 # нет базы поясов: day.py тоже берёт часы компьютера
             return datetime.date.today().isoformat()
 
-    def default_day(zone):
+    def default_day(zone, other):
         f4, _ = fresh()
         (f4 / "projects.json").write_text(json.dumps(dict(FIXTURE, timezone=zone), ensure_ascii=False), encoding="utf-8")
+        elsewhere = pathlib.Path(tempfile.mkdtemp(prefix="day-cwd-"))
+        (elsewhere / "projects.json").write_text(json.dumps({"timezone": other}), encoding="utf-8")
         before = zone_date(zone)
         out = subprocess.run([sys.executable, str(f4 / "day.py"), "add", "--task", "проверка пояса"], capture_output=True,
-                             text=True, encoding="utf-8", env=env, cwd=str(f4))
+                             text=True, encoding="utf-8", env=env, cwd=str(elsewhere))
         after = zone_date(zone)
         sent = sorted((f4 / "day-inbox").glob("*.json"))
         day = json.loads(sent[-1].read_text(encoding="utf-8"))["ops"][0]["day"] if out.returncode == 0 and len(sent) == 1 else None
         shutil.rmtree(f4, ignore_errors=True)
+        shutil.rmtree(elsewhere, ignore_errors=True)
         return day in (before, after), f"{zone}: {day} (ждали {before}) {out.stderr}{out.stdout}"
 
-    east_ok, east_info = default_day("Pacific/Kiritimati")
-    west_ok, west_info = default_day("Etc/GMT+12")
+    east_ok, east_info = default_day("Pacific/Kiritimati", "Etc/GMT+12")
+    west_ok, west_info = default_day("Etc/GMT+12", "Pacific/Kiritimati")
     if east:
         check("K79 day.py add без --day — сегодня в поясе из projects.json", east_ok and west_ok, east_info + " · " + west_info)
     else:

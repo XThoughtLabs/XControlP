@@ -67,7 +67,8 @@
   function applyDataIcons(data) {
     if (!ICON_BASE) {
       ICON_BASE = [GROUP_ICON, NAV_ICON, SET_ICON, RP_ICON].map((map) => [map, Object.freeze(Object.assign({}, map))]);
-      VIEW_KEYS = new Set(Object.keys(NAV_ICON).filter((key) => !Object.prototype.hasOwnProperty.call(GROUP_ICON, key)));
+      VIEW_KEYS = new Set(Object.keys(NAV_ICON).filter((key) => !Object.prototype.hasOwnProperty.call(GROUP_ICON, key))
+        .concat(["proposals"]));   // «Предложения» — встроенный раздел без своей картинки
     }
     ICON_BASE.forEach(([map, base]) => { Object.keys(map).forEach((key) => { delete map[key]; }); Object.assign(map, base); });
     const icons = data && data.icons && typeof data.icons === "object" && !Array.isArray(data.icons) ? data.icons : {};

@@ -110,11 +110,12 @@ function main() {
   // W4: a group named like a built-in section cannot take that section's image; a built-in group still can change its own.
   {
     const p = page();
-    p.ctx.DATA = data({ groups: { calendar: { image: "tech" }, all: { image: "tech" }, alerts: { image: "tech" }, "Технологии": { image: "growth" } } });
+    p.ctx.DATA = data({ groups: { calendar: { image: "tech" }, all: { image: "tech" }, alerts: { image: "tech" }, proposals: { image: "tech" },
+      "Технологии": { image: "growth" } } });
     p.run("board = normalize(DATA);");
-    const got = p.run('JSON.stringify([NAV_ICON.calendar, NAV_ICON.all, NAV_ICON.alerts, NAV_ICON["Технологии"]])');
-    check("W4 built-in section images kept, a built-in group's own image still set",
-      got === JSON.stringify(["calendar", "obzor", "alerts", "growth"]), got);
+    const got = p.run('JSON.stringify([NAV_ICON.calendar, NAV_ICON.all, NAV_ICON.alerts, NAV_ICON.proposals || null, NAV_ICON["Технологии"]])');
+    check("W4 built-in section images kept (proposals included), a built-in group's own image still set",
+      got === JSON.stringify(["calendar", "obzor", "alerts", null, "growth"]), got);
   }
 
   // W5: an image name of 40 characters is taken, 41 is not (the server serves at most 40: pult/settings.py ICON_PATH).
@@ -159,6 +160,22 @@ function main() {
     const got = p.run('JSON.stringify([td("Работа"), td("constructor"), td("toString"), trIdea("constructor"), td("Начат toString")])');
     check("W8 data translations: constructor and toString stay as they are",
       got === JSON.stringify(["Work", "constructor", "toString", "constructor", "Started toString"]), got);
+  }
+
+  // W9: in the image branch the symbol kept for a missing picture (data-sym) is escaped too.
+  {
+    const p = page();
+    const html = p.run('iconImg("comic", "tech", "<b>")');
+    check("W9 symbol escaped in data-sym of an image", html.includes('data-sym="&lt;b&gt;"') && !html.includes("<b>"), html);
+  }
+
+  // W10: a group symbol of 4 UTF-16 units is taken, 5 is not ("abcde"; the emoji "👨‍💻" is 5 units).
+  {
+    const p = page();
+    p.ctx.DATA = data({ groups: { Work: { symbol: "abcd" }, "Учёба": { symbol: "abcde" }, "Технологии": { symbol: "👨‍💻" } } });
+    p.run("board = normalize(DATA);");
+    const got = p.run('JSON.stringify([GROUP_ICON.Work, GROUP_ICON["Учёба"], GROUP_ICON["Технологии"]])');
+    check("W10 group symbol: 4 units taken, 5 refused", got === JSON.stringify(["abcd", "◎", "⚙"]), got);
   }
 
   console.log("\nPassed " + PASSED.length + ", failed " + FAILED.length + (FAILED.length ? ": " + FAILED.join(", ") : ""));
