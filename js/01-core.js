@@ -55,6 +55,23 @@
     "Технологии": "tech", "Учёба": "study", "Книги": "books", "Философия": "philosophy", "Игры": "games", "Развитие": "growth",
     services: "services", research: "research", "idea-stats": "idea-stats", perf: "perf", alerts: "alerts" };
   const SET_ICON = { hq: "ideas", main: "ideas" };
+  // Значки из данных: ключ icons в projects.json дополняет встроенные — groups: {"Группа": {"symbol": "◆", "image": "имя"}},
+  // idea_sets: {"id набора идей": "имя"}, reports: {"id раздела отчёта": "имя"}. Имя картинки — латиница, цифры, дефис.
+  const ICON_NAME_RE = /^[a-z0-9][a-z0-9-]{0,40}$/;
+  function applyDataIcons(data) {
+    const icons = data && data.icons && typeof data.icons === "object" && !Array.isArray(data.icons) ? data.icons : {};
+    const each = (part, fn) => {
+      const map = icons[part];
+      if (map && typeof map === "object" && !Array.isArray(map)) Object.keys(map).forEach((key) => fn(key, map[key]));
+    };
+    each("groups", (name, v) => {
+      if (!v || typeof v !== "object") return;
+      if (typeof v.symbol === "string" && v.symbol.length > 0 && v.symbol.length <= 4) GROUP_ICON[name] = v.symbol;
+      if (typeof v.image === "string" && ICON_NAME_RE.test(v.image)) NAV_ICON[name] = v.image;
+    });
+    each("idea_sets", (id, v) => { if (typeof v === "string" && ICON_NAME_RE.test(v)) SET_ICON[id] = v; });
+    each("reports", (id, v) => { if (typeof v === "string" && ICON_NAME_RE.test(v)) RP_ICON[id] = v; });
+  }
   // Стиль значков: «base» — прежние символы, иначе картинки стиля из icons\<папка стиля>.
   const ICON_MISSING = new Set();
   let setLocal = {};
@@ -152,6 +169,7 @@
 
   function normalize(data) {
     DATA_TR = (data.translations && data.translations[LANG]) || {};
+    applyDataIcons(data);
     const projects = (data.projects || []).map((p) => {
       const stages = (Array.isArray(p.stages) ? p.stages : []).map(td);
       const current = Math.max(0, Math.min(Number.isInteger(p.current) ? p.current : 0, Math.max(stages.length - 1, 0)));

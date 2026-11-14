@@ -155,7 +155,7 @@
       const btn = (kind, label) => '<button type="button" class="dg-mark' + (mk[kind] ? " on" : "") + '" aria-pressed="' + !!mk[kind] + '" data-dg="mark:' +
         esc(cur.date) + ':' + esc(it.id) + ':' + kind + ':' + (mk[kind] ? 0 : 1) + '">' + esc(label) + '</button>';
       return '<article class="dg-item"><div class="dg-head"><span class="dg-n">' + (i + 1) + '</span>' +
-        (it.topic ? '<span class="dg-topic">' + esc(DG_TOPIC[it.topic] || it.topic) + '</span>' : "") + '<h3>' + esc(dgTr(it, "title")) + '</h3></div>' +
+        (it.topic ? '<span class="dg-topic">' + esc(DG_TOPIC[it.topic] || td((dgData().topics || {})[it.topic]) || it.topic) + '</span>' : "") + '<h3>' + esc(dgTr(it, "title")) + '</h3></div>' +
         (it.summary ? '<p>' + esc(dgTr(it, "summary")) + '</p>' : "") +
         (it.why ? '<p class="dg-why"><b>' + esc(tl("Почему важно тебе:")) + '</b> ' + esc(dgTr(it, "why")) + '</p>' : "") +
         '<div class="dg-foot">' + (it.url ? '<a href="' + esc(it.url) + '" target="_blank" rel="noopener noreferrer">' + esc(it.source || it.url) + '</a>' : esc(it.source || "")) +

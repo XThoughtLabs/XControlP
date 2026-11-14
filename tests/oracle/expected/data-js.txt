@@ -99,6 +99,24 @@ window.BOARD = {
    "text": "Paused for the holidays"
   }
  ],
+ "icons": {
+  "groups": {
+   "Work": {
+    "symbol": "★",
+    "image": "tech"
+   }
+  },
+  "idea_sets": {
+   "main": "idea-stats"
+  },
+  "reports": {
+   "summary": "study"
+  }
+ },
+ "digest_topics": {
+  "robotics": "Робототехника"
+ },
+ "timezone": "Asia/Jerusalem",
  "idea_source": {
   "kind": "files",
   "error": ""
@@ -593,7 +611,8 @@ window.BOARD = {
    "llm-research": "Исследования и продукты",
    "agents-memory": "Агенты и память",
    "security-storage": "Утечки и защита",
-   "hardware": "Железо"
+   "hardware": "Железо",
+   "robotics": "Робототехника"
   },
   "digests": [],
   "push": {

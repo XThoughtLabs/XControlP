@@ -21,7 +21,7 @@
   python day.py close --day D --rating 1..10 [--note ТЕКСТ]   закрыть день с оценкой (вкладка «Итоги дней»)
   python day.py reopen --day D    carry-open --day D      открыть день снова · все незаконченные — на следующий день
   python day.py result [ИМЯ]                              итог запроса (без имени — последние)
-Номер задачи (ID) — 32 знака, его печатает add и show. День по умолчанию — сегодня по часам этого компьютера.
+Номер задачи (ID) — 32 знака, его печатает add и show. День по умолчанию — сегодня по часовому поясу из projects.json (ключ timezone), без него — по часам этого компьютера.
 """
 import argparse
 import datetime
@@ -43,8 +43,30 @@ MARK = {"planned": "○", "active": "▶", "done": "✓", "partial": "◐", "not
 PRIO = {"high": "!", "normal": " ", "low": "·"}
 
 
-def local_today():
+def read_timezone(folder):
+    """Часовой пояс из projects.json (ключ timezone, например Asia/Jerusalem); нет — пустая строка."""
+    try:
+        data = json.loads((folder / "projects.json").read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return ""
+    value = data.get("timezone") if isinstance(data, dict) else ""
+    return value.strip() if isinstance(value, str) else ""
+
+
+def zone_today(name):
+    """Сегодня в этом часовом поясе. Пояс не задан, неверен или нет базы поясов (на Windows — пакет tzdata) —
+    сегодня по часам компьютера."""
+    if name:
+        try:
+            from zoneinfo import ZoneInfo
+            return datetime.datetime.now(ZoneInfo(name)).date().isoformat()
+        except Exception:
+            pass
     return datetime.date.today().isoformat()
+
+
+def local_today():
+    return zone_today(read_timezone(HERE))
 
 
 def read_export():

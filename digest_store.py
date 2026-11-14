@@ -50,8 +50,20 @@ def now_text():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
+def extra_topics(topics):
+    """Темы сводок сверх встроенных (ключ digest_topics в projects.json): id — латиница, цифры, дефис; подпись — строка."""
+    result = {}
+    if isinstance(topics, dict):
+        for key, label in topics.items():
+            if isinstance(key, str) and re.match(r"^[a-z0-9][a-z0-9-]{0,40}$", key) and isinstance(label, str) \
+                    and label.strip() and len(label) <= 80 and key not in TOPICS:
+                result[key] = label.strip()
+    return result
+
+
 class Digests:
-    def __init__(self, repo=None):
+    def __init__(self, repo=None, topics=None):
+        self.topics = dict(TOPICS, **extra_topics(topics))   # встроенные темы и свои из projects.json
         value = str(repo or os.environ.get("PULT_DIGEST_REPO") or "").strip()
         self.repo = pathlib.Path(os.path.expanduser(value)) if value else None   # None — сводки не настроены
         self.lock = threading.RLock()        # отметки, коммиты, pull и push — по одному
@@ -129,7 +141,7 @@ class Digests:
         return result
 
     @staticmethod
-    def item(raw, date, number):
+    def item(raw, date, number, topics=None):
         if not isinstance(raw, dict):
             return None
         text = lambda key: str(raw.get(key) or "").strip()
@@ -145,14 +157,14 @@ class Digests:
                     fields = {k: str(part.get(k) or "").strip() for k in ("title", "summary", "why")}
                     if any(fields.values()):
                         tr[lang] = fields
-        return {"id": text("id") or "%s-%02d" % (date, number), "topic": text("topic") if text("topic") in TOPICS else "",
+        return {"id": text("id") or "%s-%02d" % (date, number), "topic": text("topic") if text("topic") in (topics or TOPICS) else "",
                 "title": text("title"), "summary": text("summary"), "why": text("why"),
                 "url": url if url.startswith("https://") else "", "source": text("source"),
                 "published": published if DATE_RE.match(published) else "", "i18n": tr}
 
     def view(self):
         """Всё для окна: сводки (сначала новые) с отметками, ошибки чтения, состояние отправки на GitHub."""
-        result = {"ok": False, "error": "", "repo": str(self.repo or ""), "topics": TOPICS, "digests": [],
+        result = {"ok": False, "error": "", "repo": str(self.repo or ""), "topics": self.topics, "digests": [],
                   "push": dict(self.last_push), "unpushed": None}
         if self.repo is None:
             return result                    # не настроено: пустой раздел, без git
@@ -171,7 +183,7 @@ class Digests:
                 result["digests"].append({"date": date, "error": "Файл сводки не читается: " + str(exc),
                                           "items": [], "unverified": [], "marks": {}})
                 continue
-            items = [it for it in (self.item(x, date, i + 1) for i, x in enumerate(raw.get("items") or [])) if it and it["title"]]
+            items = [it for it in (self.item(x, date, i + 1, self.topics) for i, x in enumerate(raw.get("items") or [])) if it and it["title"]]
             unverified = [str(u).strip() for u in (raw.get("unverified") or []) if str(u).strip()]
             unverified_tr = {}
             raw_u = raw.get("unverified_i18n")

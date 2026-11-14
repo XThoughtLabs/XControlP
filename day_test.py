@@ -276,6 +276,35 @@ def main():
     check("K74 перед переходом сделан резерв «before-schema-v2»", any("before-schema-v2" in x.name for x in (f2 / "day-plan-backups").glob("*.db")))
     shutil.rmtree(f2, ignore_errors=True)
 
+    # Часовой пояс дня по умолчанию (ключ timezone в projects.json): верный, неверный, не указан
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("day_cli_check", str(HERE / "day.py"))
+    day_cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(day_cli)
+    try:                                  # два пояса с разницей в 26 часов: их даты всегда разные
+        from zoneinfo import ZoneInfo
+        east, west = (datetime.datetime.now(ZoneInfo(z)).date().isoformat() for z in ("Pacific/Kiritimati", "Etc/GMT+12"))
+    except Exception:                     # нет базы поясов (Windows без tzdata): ждём часы компьютера
+        east = west = None
+    if east:
+        check("K75 верный часовой пояс — сегодня в этом поясе", day_cli.zone_today("Pacific/Kiritimati") == east
+              and day_cli.zone_today("Etc/GMT+12") == west and east != west)
+    else:
+        check("K75 нет базы поясов — часы компьютера", day_cli.zone_today("Asia/Jerusalem") == datetime.date.today().isoformat())
+    check("K76 неверный пояс — часы компьютера", day_cli.zone_today("Mars/Nowhere") == datetime.date.today().isoformat()
+          and day_cli.zone_today("../etc") == datetime.date.today().isoformat())
+    check("K77 пояс не указан — часы компьютера", day_cli.zone_today("") == datetime.date.today().isoformat())
+    f3 = pathlib.Path(tempfile.mkdtemp(prefix="day-tz-"))
+    (f3 / "projects.json").write_text(json.dumps({"timezone": " Asia/Jerusalem "}), encoding="utf-8")
+    tz_set = day_cli.read_timezone(f3)
+    (f3 / "projects.json").write_text(json.dumps({"timezone": 5}), encoding="utf-8")
+    tz_bad = day_cli.read_timezone(f3)
+    (f3 / "projects.json").write_text("{}", encoding="utf-8")
+    tz_none = day_cli.read_timezone(f3)
+    check("K78 timezone читается из projects.json", tz_set == "Asia/Jerusalem" and tz_bad == "" and tz_none == ""
+          and day_cli.read_timezone(f3 / "нет-такой-папки") == "")
+    shutil.rmtree(f3, ignore_errors=True)
+
     print(f"\nПройдено {len(PASSED)}, не пройдено {len(FAILED)}" + (": " + ", ".join(FAILED) if FAILED else ""))
     shutil.rmtree(folder, ignore_errors=True)
     return 1 if FAILED else 0

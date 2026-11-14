@@ -25,6 +25,16 @@ def digest_repo():
     return os.path.expanduser(value.strip()) if value.strip() else None
 
 
+def digest_topics():
+    """Свои темы сводок: ключ digest_topics в projects.json (проверяет digest_store.extra_topics)."""
+    try:
+        data = json.loads(SOURCE.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    topics = data.get("digest_topics") if isinstance(data, dict) else None
+    return topics if isinstance(topics, dict) else {}
+
+
 def digest_store():
     """Сводки (digest_store.py рядом с Пультом): модуль загружается один раз, хранилище создаётся заново,
     когда сменился репозиторий сводок. Не загрузилось — None (причина в DIGEST_PROBLEM)."""
@@ -38,19 +48,19 @@ def digest_store():
             except Exception as exc:
                 DIGEST_PROBLEM[0] = f"digest_store.py не загрузился: {type(exc).__name__}: {exc}"
                 module = None
-        _DIGEST.append({"module": module, "repo": None, "store": None})
+        _DIGEST.append({"module": module, "repo": None, "topics": None, "store": None})
     entry = _DIGEST[0]
     if entry["module"] is None:
         return None
-    repo = digest_repo()
-    if entry["store"] is None or entry["repo"] != repo:
+    repo, topics = digest_repo(), digest_topics()
+    if entry["store"] is None or entry["repo"] != repo or entry["topics"] != topics:
         try:
-            entry["store"] = entry["module"].Digests(repo)
+            entry["store"] = entry["module"].Digests(repo, topics)
         except Exception as exc:
             DIGEST_PROBLEM[0] = f"digest_store.py не загрузился: {type(exc).__name__}: {exc}"
             entry["store"] = None
             return None
-        entry["repo"] = repo
+        entry["repo"], entry["topics"] = repo, topics
     return entry["store"]
 
 
