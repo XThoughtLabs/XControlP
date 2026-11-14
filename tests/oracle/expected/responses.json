@@ -18,19 +18,19 @@
   "type": "text/html; charset=utf-8"
  },
  {
-  "bytes": 13097,
+  "bytes": 13195,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "12b64a3cd0746a26f4e4fb4f543bb440b03244feef0751c46216c251fe0ee420",
+  "sha256": "833fe992b34fa7b3950354cc71fa800a4c30c5b13581a0bd579e89d001aae34f",
   "status": 200,
   "step": "G03",
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 128364,
+  "bytes": 131891,
   "method": "GET",
   "path": "/i18n.js",
-  "sha256": "8d02e6ffad45f1ef0003bbc8bafe6c054c625a4e6c7269483dc838d597e5845a",
+  "sha256": "6697ef5e58bd625106218bce3781196475595f4def61cea9bf762e27c212b29a",
   "status": 200,
   "step": "G04",
   "type": "text/javascript; charset=utf-8"
@@ -151,19 +151,19 @@
   "type": "text/html;charset=utf-8"
  },
  {
-  "bytes": 71158,
+  "bytes": 72762,
   "method": "GET",
   "path": "/css/pult.css",
-  "sha256": "d09b8799627b15963010ce43728640dd836dd88f263e0998c1a8c783f11d783e",
+  "sha256": "161e5e353769b5e7bc5f1d6ca9c93d60020813966d6f224e4e4a388ccf329861",
   "status": 200,
   "step": "G18",
   "type": "text/css; charset=utf-8"
  },
  {
-  "bytes": 51174,
+  "bytes": 54699,
   "method": "GET",
   "path": "/js/01-core.js",
-  "sha256": "533fa663ed36bde3ce60d009cbe84bd0ac013ccbd062d3983a126c56e78dfa07",
+  "sha256": "c099330389b084ddc2eea9456a983da3209be5871272e31d613f830f59177858",
   "status": 200,
   "step": "G19",
   "type": "text/javascript; charset=utf-8"
@@ -223,10 +223,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 28372,
+  "bytes": 32998,
   "method": "GET",
   "path": "/js/08-reports.js",
-  "sha256": "84daa23a8727eb5446e430588cc7fdfdd1379f8f858b131a0d0ddb4821e20e1e",
+  "sha256": "9c182de245a059b496236012b5f13aea3267986820b9d19c04797fb23a7a8f45",
   "status": 200,
   "step": "G26",
   "type": "text/javascript; charset=utf-8"
@@ -241,10 +241,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 35275,
+  "bytes": 36891,
   "method": "GET",
   "path": "/js/10-settings.js",
-  "sha256": "176aa7674a649d55a7960c3bfa31d2d5e64ada37fda71ef397ee06031672cbec",
+  "sha256": "13e0aa1776d81585f5e0538459556645bb11c60491064d1df8b8b63e7c2c83bc",
   "status": 200,
   "step": "G28",
   "type": "text/javascript; charset=utf-8"
@@ -502,10 +502,10 @@
   "type": "application/json; charset=utf-8"
  },
  {
-  "bytes": 13334,
+  "bytes": 13432,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "11a651591c8613aa297cee1057bc31ecb6d9232084f62f4e906e51b03c0c2e50",
+  "sha256": "c9db7853f3f10567554275256768a873ead89df0dbd64fff38deba285835b27b",
   "status": 200,
   "step": "S17",
   "type": "text/javascript; charset=utf-8"

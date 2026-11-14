@@ -197,6 +197,42 @@
   const prMark = (key) => (board && board.proposalMarks && board.proposalMarks[key]) || null;
   const prKey = (a, p) => a.id + "|" + p.id;
   const prKindName = (k) => k === "summary" ? tl("Сводка дня") : tl("Предложения");
+  // Разделы ответов штаба: какой вид запроса к какому разделу относится. Метка раздела в меню: жёлтая — запрос ждёт ответа,
+  // зелёная — пришёл ответ, который в этом разделе ещё не открывали (память — settings.json, ui.seen).
+  const PR_SECTION = { summary: ["summary"], proposals: ["proposals", "digest-ideas"], digest: ["digest-interesting", "digest-useful"] };
+  const prUi = () => { const s = window.BOARD && window.BOARD.settings; return s && s.ui && typeof s.ui === "object" ? s.ui : {}; };
+  const prOf = (sec) => prAnswers().filter((a) => a.data && (PR_SECTION[sec] || []).includes(a.data.kind));
+  const prOther = () => prAnswers().filter((a) => !a.data || !PR_SECTION.summary.concat(PR_SECTION.digest).includes(a.data.kind));
+  function prSectionMark(sec) {
+    const kinds = PR_SECTION[sec] || [];
+    if (prWaiting().some((r) => kinds.includes(r.kind))) return "wait";
+    const latest = prOf(sec)[0], seen = prUi().seen || {};
+    return latest && seen[sec] !== latest.id ? "new" : "";
+  }
+  async function prSeen(sec) {
+    const latest = prOf(sec)[0], s = window.BOARD && window.BOARD.settings;
+    if (!latest || !s || (prUi().seen || {})[sec] === latest.id) return;
+    s.ui = Object.assign({}, s.ui, { seen: Object.assign({}, prUi().seen, { [sec]: latest.id }) });   // сразу: метка гаснет
+    renderNav();
+    if (typeof token === "undefined" || !token) return;
+    try {
+      await fetch("/ui?op=seen&section=" + encodeURIComponent(sec) + "&id=" + encodeURIComponent(latest.id), { method: "POST", headers: { "X-Pult-Token": token } });
+    } catch (err) { /* не запомнилось — метка вернётся после перезапуска */ }
+  }
+  async function uiAction(v) {
+    const i = String(v || "").indexOf(":"), op = String(v).slice(0, i), id = String(v).slice(i + 1), s = window.BOARD && window.BOARD.settings;
+    if (op !== "hide-summary" || !s) return;
+    s.ui = Object.assign({}, s.ui, { summary_hidden: id });
+    renderHqDay();
+    if (typeof token === "undefined" || !token) return;
+    try {
+      const r = await fetch("/ui?op=hide-summary&id=" + encodeURIComponent(id), { method: "POST", headers: { "X-Pult-Token": token } });
+      const res = await r.json();
+      if (!r.ok || !res.ok) throw new Error(res.error || (tl("ответ ") + r.status));
+    } catch (err) {
+      showSync("bad", tl("Скрытие сводки не запомнилось"), [["err", esc(String(err && err.message || err))]]);
+    }
+  }
   const prOpen = () => prAnswers().reduce((n, a) => n + (a.data && Array.isArray(a.data.proposals) ? a.data.proposals.filter((p) => !prMark(prKey(a, p))).length : 0), 0);
   function prSnapshot() {
     const key = dayKey(today()), D = state.day.data && state.day.data.day === key ? state.day.data : null;
@@ -259,8 +295,19 @@
   }
   const prButtons = () => (dpServer() ? '<button type="button" class="svc-btn" data-prq="summary">' + esc(tl("Запросить сводку дня")) + '</button>' +
     '<button type="button" class="svc-btn" data-prq="proposals">' + esc(tl("Запросить предложения")) + '</button>' : "");
+  function renderSummary() {
+    const waiting = prWaiting().filter((r) => r.kind === "summary"), list = prOf("summary");
+    $("ideas").innerHTML = '<div class="card"><div class="rp-head"><h2>' + esc(tl("Сводка дня")) + '</h2><span class="rp-tools">' +
+      (dpServer() ? '<button type="button" class="svc-btn" data-prq="summary">' + esc(tl("Запросить сводку дня")) + '</button>' : "") +
+      '<button type="button" class="svc-btn" data-prq="load">' + esc(tl("Загрузить ответы")) + '</button></span></div>' +
+      '<p class="sub">' + esc(tl("Кнопка запроса кладёт снимок Пульта в папку «requests». Напишите в чате штаба «разбери запрос» — сводка появится здесь.")) + '</p>' +
+      (waiting.length ? '<ul class="pr-wait">' + waiting.map((r) => '<li>⏳ ' + esc(stamp(r.created)) + ' — ' + esc(tl("ждёт разбора в чате штаба")) + '</li>').join("") + '</ul>' : "") + '</div>' +
+      (list.length ? list.map(prAnswerHtml).join("") : '<div class="card"><div class="empty">' + esc(tl("Сводок дня пока нет")) + '</div></div>');
+    prSeen("summary");
+  }
   function renderProposals() {
-    const waiting = prWaiting(), answers = prAnswers();
+    const waiting = prWaiting().filter((r) => !PR_SECTION.summary.concat(PR_SECTION.digest).includes(r.kind)), answers = prOther();
+    prSeen("proposals");
     $("ideas").innerHTML = '<div class="card"><div class="rp-head"><h2>' + esc(tl("Запросы штабу")) + '</h2><span class="rp-tools">' + prButtons() +
       '<button type="button" class="svc-btn" data-prq="load">' + esc(tl("Загрузить предложения")) + '</button></span></div>' +
       '<p class="sub">' + esc(tl("Кнопка запроса кладёт снимок Пульта в папку «requests». Напишите в чате штаба «разбери запрос» — ответ штаба появится здесь.")) + '</p>' +
@@ -275,8 +322,12 @@
     const key = dayKey(today()), open = prOpen();
     const sum = prAnswers().find((a) => a.data && a.data.kind === "summary" && String(a.data.written).slice(0, 10) === key);
     const waitSum = prWaiting().some((r) => r.kind === "summary");
+    // Крестик прячет только эту сводку (её id; нет сводки — «none:день»): новая сводка снова видна. Совсем — в «Настройках».
+    const curId = sum ? sum.id : "none:" + key, setv = (window.BOARD && window.BOARD.settings) || {};
+    if (setv.summary_card === "off" || prUi().summary_hidden === curId) { el.hidden = true; return; }
     el.innerHTML = '<div class="card hq-card"><div class="rp-head"><h2>' + esc(tl("Сводка дня")) + (sum ? ' <span class="rp-week">' + esc(stamp(sum.data.written)) + '</span>' : "") + '</h2>' +
-      '<span class="rp-tools">' + prButtons() + '<button type="button" class="svc-btn" data-goto="proposals">' + esc(tl("Предложения")) + (open ? " · " + open : "") + '</button></span></div>' +
+      '<span class="rp-tools">' + prButtons() + '<button type="button" class="svc-btn" data-goto="proposals">' + esc(tl("Предложения")) + (open ? " · " + open : "") + '</button>' +
+      '<button type="button" class="hq-x" data-ui="hide-summary:' + esc(curId) + '" aria-label="' + esc(tl("Скрыть эту сводку")) + '" title="' + esc(tl("Скрыть эту сводку")) + '">✕</button></span></div>' +
       (sum ? (sum.data.summary ? '<p class="rp-lead">' + mdInline(rpT(sum.data.summary)) + '</p>' : "") + (Array.isArray(sum.data.blocks) ? sum.data.blocks.slice(0, 2).map((b) => rpBlock(b)).join("") : "")
         : '<p class="sub">' + esc(waitSum ? tl("Запрос сводки ждёт разбора в чате штаба") : tl("Сводки на сегодня ещё нет — нажмите «Запросить сводку дня»")) + '</p>') + '</div>';
   }

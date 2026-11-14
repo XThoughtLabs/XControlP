@@ -3,7 +3,7 @@
   // Кнопка ☰ перед языками → панель со стороны меню. Выбор хранит программа в settings.json (POST /settings?icons=…&theme=…).
   // Этап 2: стили значков — найденные программой в icons (style.json) и «Базовый» (символы); «Вернуть базовые настройки».
   const setPanel = $("settings-panel");
-  const SET_DEFAULT = { icons: "comic", theme: "dark", scale: "100", accent: "orange", updates: "off" };
+  const SET_DEFAULT = { icons: "comic", theme: "dark", scale: "100", accent: "orange", updates: "off", summary_card: "on" };
   const SET_SCALES = ["90", "100", "110", "125"];
   const SET_ACCENTS = [["orange", "Оранжевый", "#f28a1e"], ["blue", "Синий", "#4c8df6"], ["violet", "Фиолетовый", "#9d80f2"], ["teal", "Бирюзовый", "#19b5a3"]];
   const uiZoom = () => parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
@@ -55,6 +55,9 @@
       '<section class="set-sec"><h3>' + esc(tl("Общий стиль")) + '</h3><div class="set-opts">' +
         opt("theme", "dark", '<b>' + esc(tl("Тёмный")) + '</b>', false, u.theme === "dark") + opt("theme", "light", '<b>' + esc(tl("Светлый")) + '</b>', false, u.theme === "light") + '</div></section>' +
       '<section class="set-sec"><h3>' + esc(tl("Настройка стиля")) + '</h3>' + tune + '</section>' +
+      '<section class="set-sec"><h3>' + esc(tl("Сводка дня в обзоре")) + '</h3><div class="set-row">' +
+        chip("summary_card", "on", esc(tl("Показывать")), u.summary_card !== "off") + chip("summary_card", "off", esc(tl("Скрыть")), u.summary_card === "off") + '</div>' +
+        '<p class="set-note">' + esc(tl("Крестик на карточке прячет только текущую сводку; новая сводка снова появится. Здесь карточку можно убрать совсем")) + '</p></section>' +
       '<section class="set-sec"><button type="button" class="svc-btn" data-set="reset"' + (isBase || setBusy ? " disabled" : "") + '>' + esc(tl("Вернуть базовые настройки")) + '</button>' +
         '<p class="set-note">' + esc(tl("Прежние значки-символы, тёмный стиль, размер 100 % и оранжевый акцент")) + '</p></section>') +
       '</div></div>';
@@ -126,7 +129,7 @@
     else if (cmd === "tab") { setTab = tabOf(arg); setMsg = ""; setOk = ""; renderSettings(); }
     else if (cmd === "close") { if (setPanel && setPanel.open) setPanel.close(); }
     else if (cmd === "reset") { if (await saveSettings({ icons: "base", theme: "dark", scale: "100", accent: "orange" })) { setOk = tl("Базовые настройки возвращены"); renderSettings(); } }
-    else if (cmd === "icons" || cmd === "theme" || cmd === "scale" || cmd === "accent" || cmd === "updates") saveSettings({ [cmd]: arg });
+    else if (cmd === "icons" || cmd === "theme" || cmd === "scale" || cmd === "accent" || cmd === "updates" || cmd === "summary_card") saveSettings({ [cmd]: arg });
   }
   if (setPanel) {
     setPanel.addEventListener("click", (e) => { if (e.target === setPanel) setPanel.close(); });
@@ -164,18 +167,19 @@
     const researchView = state.view === "research";
     const reportsView = state.view === "reports";
     const proposalsView = state.view === "proposals";
-    if (state.view !== "all" && state.view !== "alerts" && !insightView && !calView && !dayView && !reviewView && !statsView && !digestView && !servicesView && !researchView && !reportsView && !proposalsView && !ideaSetOf(state.view) && !board.groups.includes(state.view)) state.view = "all";
+    const summaryView = state.view === "summary";
+    if (state.view !== "all" && state.view !== "alerts" && !insightView && !calView && !dayView && !reviewView && !statsView && !digestView && !servicesView && !researchView && !reportsView && !proposalsView && !summaryView && !ideaSetOf(state.view) && !board.groups.includes(state.view)) state.view = "all";
     const ideaSet = ideaSetOf(state.view), ideasView = !!ideaSet;
-    document.querySelectorAll(".dash").forEach((el) => { el.hidden = ideasView || insightView || calView || dayView || reviewView || statsView || digestView || servicesView || researchView || reportsView || proposalsView; });
-    $("ideas").hidden = !(ideasView || servicesView || researchView || reportsView || proposalsView);
+    document.querySelectorAll(".dash").forEach((el) => { el.hidden = ideasView || insightView || calView || dayView || reviewView || statsView || digestView || servicesView || researchView || reportsView || proposalsView || summaryView; });
+    $("ideas").hidden = !(ideasView || servicesView || researchView || reportsView || proposalsView || summaryView);
     $("insight").hidden = !insightView;
     $("calendar").hidden = !calView;
     $("dayplan").hidden = !dayView;
     $("review").hidden = !reviewView;
     $("stats").hidden = !statsView;
     $("digest").hidden = !digestView;
-    $("period").hidden = ideasView || insightView || calView || dayView || reviewView || statsView || digestView || servicesView || researchView || reportsView || proposalsView;
-    const list = ideasView || insightView || calView || dayView || reviewView || statsView || digestView || servicesView || researchView || reportsView || proposalsView ? board.projects : visibleProjects();
+    $("period").hidden = ideasView || insightView || calView || dayView || reviewView || statsView || digestView || servicesView || researchView || reportsView || proposalsView || summaryView;
+    const list = ideasView || insightView || calView || dayView || reviewView || statsView || digestView || servicesView || researchView || reportsView || proposalsView || summaryView ? board.projects : visibleProjects();
     renderNav(); renderFocus(); renderBottom(list);
     if (digestView) {
       $("title").textContent = tl("Сводки");
@@ -197,6 +201,10 @@
       $("title").textContent = tl("Календарь");
       $("subtitle").textContent = tl("Личный — ваш Google Календарь (только чтение) · рабочий — события проектов из Пульта · сегодня ") + fmt(today());
       renderCalendar();
+    } else if (summaryView) {
+      $("title").textContent = tl("Сводка дня");
+      $("subtitle").textContent = tl("Сводки дня от штаба, новые сверху") + tl(" · сегодня ") + fmt(today());
+      renderSummary();
     } else if (proposalsView) {
       $("title").textContent = tl("Предложения");
       $("subtitle").textContent = tl("Ответы штаба на запросы Пульта · открытых предложений") + ": " + prOpen() + tl(" · сегодня ") + fmt(today());
@@ -236,6 +244,7 @@
       renderHqDay(); renderTiles(list); renderActivity(list); renderProgress(list); renderShare(list); renderTable(list); renderFeed(list);
     }
     if (drawer.open) renderDrawer();
+    foldCards();
   }
 
   function load() {
@@ -377,6 +386,10 @@
     if (rs && !rs.disabled) { rsAction(rs.dataset.rs); return; }
     const rp = e.target.closest("[data-rp]");
     if (rp && !rp.disabled) { rpAction(rp.dataset.rp); return; }
+    const fx = e.target.closest("[data-fold]");
+    if (fx && !fx.disabled) { foldAction(fx.dataset.fold); return; }
+    const hx = e.target.closest("[data-ui]");
+    if (hx && !hx.disabled) { uiAction(hx.dataset.ui); return; }
     const ux = e.target.closest("[data-upd]");
     if (ux && !ux.disabled) { updAction(ux.dataset.upd); return; }
     const sx = e.target.closest("[data-set]");
@@ -442,6 +455,12 @@
   if (load()) {
     dayLoad(true);
     revLoad(true);
+    const mainArea = document.querySelector("main");
+    if (mainArea && typeof MutationObserver === "function") {
+      let foldQueued = false;
+      new MutationObserver(() => { if (!foldQueued) { foldQueued = true; requestAnimationFrame(() => { foldQueued = false; foldCards(); }); } })
+        .observe(mainArea, { childList: true, subtree: true });
+    }
     setInterval(refresh, 20000);
     setInterval(render, 10 * 60 * 1000);
     doSync(true);

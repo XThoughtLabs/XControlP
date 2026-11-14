@@ -68,7 +68,7 @@
     if (!ICON_BASE) {
       ICON_BASE = [GROUP_ICON, NAV_ICON, SET_ICON, RP_ICON].map((map) => [map, Object.freeze(Object.assign({}, map))]);
       VIEW_KEYS = new Set(Object.keys(NAV_ICON).filter((key) => !Object.prototype.hasOwnProperty.call(GROUP_ICON, key))
-        .concat(["proposals"]));   // «Предложения» — встроенный раздел без своей картинки
+        .concat(["proposals", "summary"]));   // «Предложения» и «Сводка дня» — встроенные разделы без своей картинки
     }
     ICON_BASE.forEach(([map, base]) => { Object.keys(map).forEach((key) => { delete map[key]; }); Object.assign(map, base); });
     const icons = data && data.icons && typeof data.icons === "object" && !Array.isArray(data.icons) ? data.icons : {};
@@ -324,19 +324,70 @@
       '<text x="31" y="35" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="700">' + Math.round(v) + '%</text></svg>';
   }
 
+  // Стрелка на больших карточках: свернуть карточку до заголовка. Ключ — раздел, секция страницы и номер карточки в ней;
+  // память — settings.json (ui.collapsed): окно каждый раз открывается по новому адресу, и память браузера там пустая.
+  const foldView = (view) => /^[a-z0-9][a-z0-9-]{0,39}$/.test(String(view)) ? String(view)
+    : "h" + Array.from(String(view)).reduce((h, ch) => (h * 31 + ch.codePointAt(0)) >>> 0, 7).toString(36);
+  const foldList = () => { const s = window.BOARD && window.BOARD.settings, u = s && s.ui; return u && Array.isArray(u.collapsed) ? u.collapsed : []; };
+  function foldCards() {
+    const main = document.querySelector("main");
+    if (!main || !main.querySelectorAll) return;
+    const folded = new Set(foldList()), vp = foldView(state.view);
+    Array.from(main.children).forEach((sec, si) => {
+      if (sec.tagName !== "SECTION" || sec.hidden || sec.id === "syncbox") return;
+      const zone = sec.id || "s" + si;
+      let n = 0;
+      sec.querySelectorAll(".card").forEach((card) => {
+        const head = Array.from(card.children).find((c) => c.tagName === "H2" || c.classList.contains("rp-head"));
+        if (!head) return;
+        const key = vp + ":" + zone + ":" + (n++), on = folded.has(key);
+        let btn = Array.from(head.children).find((c) => c.classList.contains("fold-btn"));
+        if (!btn) {
+          btn = document.createElement("button");
+          btn.type = "button"; btn.className = "fold-btn";
+          head.appendChild(btn); head.classList.add("fold-head");
+        }
+        if (btn.dataset.fold !== key) btn.dataset.fold = key;
+        if (btn.textContent !== (on ? "▸" : "▾")) btn.textContent = on ? "▸" : "▾";
+        if (btn.getAttribute("aria-expanded") !== String(!on)) {
+          btn.setAttribute("aria-expanded", String(!on));
+          btn.setAttribute("aria-label", tl(on ? "Развернуть карточку" : "Свернуть карточку"));
+        }
+        if (card.classList.contains("folded") !== on) card.classList.toggle("folded", on);
+      });
+    });
+  }
+  async function foldAction(key) {
+    const s = window.BOARD && window.BOARD.settings;
+    if (!s) return;
+    const folded = foldList(), on = !folded.includes(key);
+    s.ui = Object.assign({}, s.ui, { collapsed: on ? folded.concat([key]) : folded.filter((k) => k !== key) });
+    foldCards();
+    if (typeof token === "undefined" || !token) return;      // открыт как файл: до перезагрузки
+    try {
+      const r = await fetch("/ui?op=fold&key=" + encodeURIComponent(key) + "&on=" + (on ? 1 : 0), { method: "POST", headers: { "X-Pult-Token": token } });
+      const res = await r.json();
+      if (!r.ok || !res.ok) throw new Error(res.error || (tl("ответ ") + r.status));
+    } catch (err) {
+      showSync("bad", tl("Свёрнутая карточка не запомнилась"), [["err", esc(String(err && err.message || err))]]);
+    }
+  }
+
   function renderNav() {
     const all = board.projects;
     const alarms = all.filter((p) => alertsOf(p).some(isAlarm)).length + sysAlerts().filter(isAlarm).length;
     const items = [["all", "▦", tl("Обзор"), all.filter((p) => p.group !== DEV).length]].concat(board.groups.map((g) => [g, GROUP_ICON[g] || "•", td(g), all.filter((p) => p.group === g).length]));
-    const navBtn = ([key, icon, label, count]) =>
-      '<button type="button" data-view="' + esc(key) + '" class="' + (state.view === key ? "active" : "") + '"><span class="icon">' + navIcon(NAV_ICON[key], icon) + '</span>' + esc(label) +
+    const navBtn = ([key, icon, label, count, mark]) =>
+      '<button type="button" data-view="' + esc(key) + '" class="' + (state.view === key ? "active" : "") + (mark ? " hq-" + mark : "") + '"' +
+      (mark ? ' title="' + esc(tl(mark === "wait" ? "Запрос ждёт ответа штаба" : "Пришёл ответ штаба")) + '"' : "") + '><span class="icon">' + navIcon(NAV_ICON[key], icon) + '</span>' + esc(label) +
       '<span class="count">' + count + '</span></button>';
     const upd = (window.BOARD && window.BOARD.updates) || {};
     let html = (upd.restart ? '<button type="button" class="nav-upd done" data-set="open:updates">↻ ' + esc(tl("Перезапустите Пульт")) + '</button>'
       : upd.state === "available" ? '<button type="button" class="nav-upd" data-set="open:updates">⬆ ' + esc(tl("Есть обновление")) + ' · ' + (upd.behind | 0) + '</button>' : "") +
       navBtn(items[0]) + navBtn(["calendar", "▤", tl("Календарь"), calTodayCount()]) + navBtn(["day", "☑", tl("План дня"), dayLeftCount()]) + navBtn(["review", "▥", tl("Итоги дней"), rvWeekPercent()]) +
-      navBtn(["stats", "▧", tl("Статистика"), ""]) + navBtn(["digest", "✉", tl("Сводки"), dgCount()]) +
-      navBtn(["reports", "▨", tl("Отчёты"), rpAll().length]) + navBtn(["proposals", "✧", tl("Предложения"), prOpen()]) + items.slice(1).map(navBtn).join("");
+      navBtn(["stats", "▧", tl("Статистика"), ""]) + navBtn(["digest", "✉", tl("Сводки"), dgCount(), prSectionMark("digest")]) +
+      navBtn(["reports", "▨", tl("Отчёты"), rpAll().length]) + navBtn(["summary", "☼", tl("Сводка дня"), prOf("summary").length, prSectionMark("summary")]) +
+      navBtn(["proposals", "✧", tl("Предложения"), prOpen(), prSectionMark("proposals")]) + items.slice(1).map(navBtn).join("");
     board.ideaSets.forEach((set, i) => {
       const key = ideaView(set, i);
       html += '<button type="button" data-view="' + esc(key) + '" class="' + (i ? "subnav " : "") + (state.view === key ? "active" : "") + '"><span class="icon">' + navIcon(SET_ICON[set.id], i ? "◇" : "✦") + '</span>' +

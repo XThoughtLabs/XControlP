@@ -178,6 +178,70 @@ function main() {
     check("W10 group symbol: 4 units taken, 5 refused", got === JSON.stringify(["abcd", "◎", "⚙"]), got);
   }
 
+  // XCP-25 B: the HQ sections, their marks, the overview summary card, the arrows on big cards.
+  const ans = (id, kind, written, extra) => ({ file: id + ".json", id, error: "", data: Object.assign({ format: "pult-answer", version: 1, kind, written,
+    title: { ru: "T", en: "T", he: "T" }, summary: { ru: "S", en: "S", he: "S" } }, extra || {}) });
+  const hqPage = (answers, requests, settings) => {
+    const p = page({ settings: Object.assign({ lang: "ru" }, settings || {}) });
+    Object.assign(p.ctx, { token: "", stamp: (x) => String(x || ""), refresh() {}, showSync() {} });
+    p.ctx.DATA = data(undefined, { answers, requests });
+    p.run("board = normalize(DATA);");
+    return p;
+  };
+  const navClass = (p, key) => { p.run("renderNav();"); const m = p.els.nav.innerHTML.match(new RegExp('data-view="' + key + '" class="([^"]*)"')); return m ? m[1] : null; };
+
+  // W11: yellow while a request of the section waits; green for an answer not yet opened there; nothing once opened.
+  {
+    const waiting = hqPage([], [{ id: "request-2026-01-15-090000-summary", kind: "summary", created: "2026-01-15T09:00:00", answered: false }]);
+    const fresh = hqPage([ans("request-2026-01-15-090000-summary", "summary", "2026-01-15T09:30")], []);
+    const opened = hqPage([ans("request-2026-01-15-090000-summary", "summary", "2026-01-15T09:30")], [],
+      { ui: { collapsed: [], summary_hidden: "", seen: { summary: "request-2026-01-15-090000-summary" } } });
+    const ideas = hqPage([ans("request-2026-01-15-100000-digest-ideas", "digest-ideas", "2026-01-15T10:30")], []);
+    const got = [navClass(waiting, "summary"), navClass(fresh, "summary"), navClass(opened, "summary"), navClass(ideas, "proposals"), navClass(ideas, "summary")];
+    check("W11 section marks: wait, new, none once seen; digest-ideas marks Proposals only",
+      JSON.stringify(got) === JSON.stringify([" hq-wait", " hq-new", "", " hq-new", ""]), JSON.stringify(got));
+  }
+
+  // W12: the overview summary card: the cross hides that summary only; a new summary shows again; the switch hides it for good.
+  {
+    const today = (p) => p.run("dayKey(today())");
+    const mk = (settings, id) => { const p = hqPage([], [], settings); const d = today(p);
+      p.ctx.DATA = data(undefined, { answers: [ans(id || "request-x-summary", "summary", d + "T08:00")], requests: [] });
+      p.run("board = normalize(DATA); state.view = 'all'; renderHqDay();"); return p.els.hqday; };
+    const shown = mk({});
+    const hiddenSame = mk({ ui: { collapsed: [], summary_hidden: "request-x-summary", seen: {} } });
+    const newOne = mk({ ui: { collapsed: [], summary_hidden: "request-x-summary", seen: {} } }, "request-y-summary");
+    const off = mk({ summary_card: "off" });
+    check("W12 overview card: cross hides that summary, a new one shows, the switch hides it",
+      !shown.hidden && shown.innerHTML.includes('data-ui="hide-summary:request-x-summary"') && hiddenSame.hidden === true
+      && !newOne.hidden && newOne.innerHTML.includes("hide-summary:request-y-summary") && off.hidden === true,
+      JSON.stringify([shown.hidden, hiddenSame.hidden, newOne.hidden, off.hidden]));
+  }
+
+  // W13: «Сводка дня» lists only summaries; «Предложения» shows the other answers, not summaries or digest collections.
+  {
+    const list = [ans("request-a-summary", "summary", "2026-01-15T09:00"), ans("request-b-proposals", "proposals", "2026-01-15T08:00"),
+      ans("request-c-digest-useful", "digest-useful", "2026-01-15T07:00"), ans("request-d-digest-ideas", "digest-ideas", "2026-01-15T06:00")];
+    const p = hqPage(list, []);
+    p.run("renderSummary();");
+    const sum = p.els.ideas.innerHTML;
+    p.run("renderProposals();");
+    const prop = p.els.ideas.innerHTML;
+    const ids = (html) => ["request-a", "request-b", "request-c", "request-d"].filter((k) => html.includes(k));
+    const cnt = (html) => (html.match(/class="card pr-card"/g) || []).length;
+    check("W13 summary view: summaries only; proposals view: proposals and digest ideas",
+      cnt(sum) === 1 && cnt(prop) === 2 && !prop.includes('<span class="pr-kind">Сводка дня</span>'),
+      JSON.stringify({ sum: cnt(sum), prop: cnt(prop), ids: ids(prop) }));
+  }
+
+  // W14: the key of a folded card: a Latin view name kept, any other name turned into a short Latin hash; always a valid key.
+  {
+    const p = page();
+    const keys = p.run('JSON.stringify([foldView("all"), foldView("Технологии"), foldView("Технологии"), foldView("Учёба"), foldView("A b")])');
+    const k = JSON.parse(keys), re = /^[a-z0-9][a-z0-9:_|.-]{0,79}$/;
+    check("W14 fold keys: stable, Latin, valid for the program", k[0] === "all" && k[1] === k[2] && k[1] !== k[3] && k.every((x) => re.test(x + ":tiles:0")), keys);
+  }
+
   console.log("\nPassed " + PASSED.length + ", failed " + FAILED.length + (FAILED.length ? ": " + FAILED.join(", ") : ""));
   return FAILED.length ? 1 : 0;
 }

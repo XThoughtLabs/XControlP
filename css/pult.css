@@ -914,3 +914,19 @@
   .upd-line { margin: 4px 0 8px; }
   .upd-line.upd-available, .upd-line.upd-updated { color: var(--good); font-weight: 700; }
   .upd-line.upd-error, .upd-line.upd-diverged, .upd-line.upd-ahead { color: var(--serious); }
+  /* Метки разделов штаба (XCP-25): жёлтая — запрос ждёт ответа, зелёная — пришёл ответ, раздел ещё не открывали. */
+  nav button.hq-wait { box-shadow: inset 4px 0 0 var(--warning); }
+  nav button.hq-wait .count { background: var(--warning); color: #1a1300; border-radius: 9px; padding: 0 7px; font-weight: 700; }
+  nav button.hq-new { box-shadow: inset 4px 0 0 var(--good); }
+  nav button.hq-new .count { background: var(--good); color: #fff; border-radius: 9px; padding: 0 7px; font-weight: 700; }
+  [dir="rtl"] nav button.hq-wait { box-shadow: inset -4px 0 0 var(--warning); }
+  [dir="rtl"] nav button.hq-new { box-shadow: inset -4px 0 0 var(--good); }
+  /* Крестик на сводке дня в обзоре и стрелка «свернуть» на больших карточках. */
+  .hq-x { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; width: 28px; height: 28px; cursor: pointer; line-height: 1; }
+  .hq-x:hover { color: var(--text); border-color: var(--muted); }
+  .fold-btn { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: 6px; float: inline-end; }
+  .rp-head > .fold-btn { float: none; margin-inline-start: auto; }
+  .fold-btn:hover { color: var(--text); background: var(--line); }
+  .fold-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .card.folded > :not(.fold-head) { display: none !important; }
+  .card.folded { padding-block: 8px; }

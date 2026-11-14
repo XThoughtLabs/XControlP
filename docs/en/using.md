@@ -15,6 +15,8 @@ The menu is on the left, the chosen section on the right. **Ideas**, **Our servi
 
 **Overview** shows all projects (except the personal-growth group `Развитие`): counts by status, stage moves in the period, average progress, activity by day, progress of each project and where your attention went. The **Day summary** card shows the assistant's summary of today, if you asked for one (see [Proposals](#proposals-and-requests-to-the-assistant)).
 
+The arrow on the right of a big card collapses it to one line; the program remembers this after a restart.
+
 Each group from `projects.json` has its own menu entry with the projects of that group. A project card shows its stages, the current stage, the status, days since the last move, recent events and its link. Projects with a progress source show where the data came from.
 
 The **Focus** card in the menu shows the project in focus (`focus` in `projects.json`, or the first project in progress).
@@ -75,7 +77,9 @@ The dashboard does not talk to an AI model itself. Instead:
 1. Press **Request a day summary** or **Request proposals** (on the Overview or in Proposals). The program saves a snapshot of the dashboard to `requests/`.
 2. In the chat with your assistant, write «review the request».
 3. The assistant reads the request and writes an answer to `answers/`. The window picks it up by itself; **Load proposals** does it at once.
-4. A day summary appears on the Overview. Proposals appear in **Proposals**: **To the day plan** turns one into a task for today, **Decline** hides it, **Restore** brings it back.
+4. A day summary appears in the **Day summary** section (with the earlier ones) and as a card on the Overview. The cross on the card hides that summary; a new one appears again; the card can be removed for good in **Settings**. Proposals appear in **Proposals**: **To the day plan** turns one into a task for today, **Decline** hides it, **Restore** brings it back.
+
+While a request waits for an answer, its section in the menu is marked yellow; when the answer has arrived, green, until you open the section.
 
 How the assistant does its part: [Working with an assistant](assistant.md).
 

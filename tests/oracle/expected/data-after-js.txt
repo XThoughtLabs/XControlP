@@ -318,7 +318,13 @@ window.BOARD = {
   "theme": "dark",
   "scale": "100",
   "accent": "orange",
-  "updates": "off"
+  "updates": "off",
+  "summary_card": "on",
+  "ui": {
+   "collapsed": [],
+   "summary_hidden": "",
+   "seen": {}
+  }
  },
  "icon_styles": [
   {

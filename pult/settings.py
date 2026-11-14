@@ -19,13 +19,20 @@ def read_translations():
 
 # Настройки окна: язык, стиль значков, общий стиль. Чужие значения не принимаются.
 # Стили значков — подпапки icons со своим style.json; «base» — прежние символы, картинок не нужно.
-SETTING_DEFAULTS = {"lang": "ru", "icons": "comic", "theme": "dark", "scale": "100", "accent": "orange", "updates": "off"}
+SETTING_DEFAULTS = {"lang": "ru", "icons": "comic", "theme": "dark", "scale": "100", "accent": "orange", "updates": "off",
+                    "summary_card": "on"}
+# Память окна (тоже в settings.json, ключ ui): свёрнутые карточки, сводка дня, скрытая крестиком на обзоре,
+# и последний открытый ответ штаба в каждом разделе (зелёная метка гаснет, когда раздел открыт).
+UI_KEY = re.compile(r"^[a-z0-9][a-z0-9:_|.-]{0,79}$")
+UI_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$")
+UI_SECTIONS = ("summary", "proposals", "digest")
+UI_FOLD_MAX = 300
 
 
 def setting_choices():
     return {"lang": LANGS, "icons": ("base",) + tuple(icon_styles()), "theme": ("dark", "light"),
             "scale": ("90", "100", "110", "125"), "accent": ("orange", "blue", "violet", "teal"),
-            "updates": ("off", "on")}
+            "updates": ("off", "on"), "summary_card": ("on", "off")}
 
 
 def read_settings():
@@ -39,7 +46,55 @@ def read_settings():
     result = {key: raw[key] if raw.get(key) in choices[key] else SETTING_DEFAULTS[key] for key in SETTING_DEFAULTS}
     if result["icons"] not in choices["icons"]:
         result["icons"] = "base"   # папки стиля нет — прежние символы
+    result["ui"] = clean_ui(raw.get("ui"))
     return result
+
+
+def clean_ui(raw):
+    """Память окна из settings.json: только проверенные значения, остальное отбрасывается."""
+    raw = raw if isinstance(raw, dict) else {}
+    folded = raw.get("collapsed") if isinstance(raw.get("collapsed"), list) else []
+    folded = list(dict.fromkeys(k for k in folded if isinstance(k, str) and UI_KEY.match(k)))[:UI_FOLD_MAX]
+    hidden = raw.get("summary_hidden")
+    hidden = hidden if isinstance(hidden, str) and UI_ID.match(hidden) else ""
+    seen = raw.get("seen") if isinstance(raw.get("seen"), dict) else {}
+    seen = {k: v for k, v in seen.items() if k in UI_SECTIONS and isinstance(v, str) and UI_ID.match(v)}
+    return {"collapsed": folded, "summary_hidden": hidden, "seen": seen}
+
+
+def write_settings(settings):
+    temporary = SETTINGS.with_name(f"settings.json.{os.getpid()}.tmp")
+    temporary.write_text(json.dumps(settings, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    os.replace(temporary, SETTINGS)
+    with SYNC_LOCK:
+        build()
+        LAST_STAMPS[0] = stamps()
+
+
+def save_ui(query):
+    """Память окна: POST /ui?op=fold&key=…&on=1|0 (стрелка на карточке), op=hide-summary&id=… (крестик на сводке дня
+    в обзоре), op=seen&section=summary|proposals|digest&id=… (раздел с ответом открыт — зелёная метка гаснет)."""
+    q = lambda key: ((query or {}).get(key) or [""])[0]
+    op, settings = q("op"), read_settings()
+    ui = settings["ui"]
+    if op == "fold":
+        key, on = q("key"), q("on")
+        if not UI_KEY.match(key) or on not in ("0", "1"):
+            return {"ok": False, "error": "нет ключа карточки"}
+        folded = [k for k in ui["collapsed"] if k != key] + ([key] if on == "1" else [])
+        ui["collapsed"] = folded[-UI_FOLD_MAX:]
+    elif op == "hide-summary":
+        if not UI_ID.match(q("id")):
+            return {"ok": False, "error": "нет id сводки"}
+        ui["summary_hidden"] = q("id")
+    elif op == "seen":
+        if q("section") not in UI_SECTIONS or not UI_ID.match(q("id")):
+            return {"ok": False, "error": "нет раздела или id ответа"}
+        ui["seen"][q("section")] = q("id")
+    else:
+        return {"ok": False, "error": f"неизвестное действие: {op!r}"}
+    write_settings(settings)
+    return {"ok": True, "op": op, "ui": ui}
 
 
 def save_settings(query):
@@ -54,13 +109,7 @@ def save_settings(query):
             changes[key] = value
     if not changes:
         return {"ok": False, "error": "нечего сохранять"}
-    settings = dict(read_settings(), **changes)
-    temporary = SETTINGS.with_name(f"settings.json.{os.getpid()}.tmp")
-    temporary.write_text(json.dumps(settings, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    os.replace(temporary, SETTINGS)
-    with SYNC_LOCK:
-        build()
-        LAST_STAMPS[0] = stamps()
+    write_settings(dict(read_settings(), **changes))
     return dict({"ok": True}, **changes)
 
 
