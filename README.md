@@ -40,6 +40,15 @@ If the shortcut does not start, double-click `start_fallback.cmd`.
 
 Your data lives in files next to the program: `projects.json`, the day plan `day.db`, the calendar, requests and answers, research and so on. All of them are listed in `.gitignore`, so a copy of XControlP kept in git does not commit them. Do not publish these files.
 
+## Updates
+
+XControlP is in active development: new versions come out regularly on the `main` branch.
+
+- **Follow the project:** on GitHub, press **Watch** (for example **All Activity**) to be notified of new commits, or **Star** to keep the project in your list.
+- **The update check in the program** (for a folder that is a git clone): switch it on in **Settings** → **Updates**. The program then tells you when a new version is out, updates only when you press **Update the program**, and does not touch your data files. It is off by default. Details: [Setup, section 9](docs/en/setup.md#9-updating-xcontrolp).
+- **By hand:** `git pull` in the folder, with the window closed. For a fork on GitHub: **Sync fork** on your fork's page, then `git pull`.
+- **Fully automatic:** git has no built-in automatic update of a clone. If you want one, a task in Windows Task Scheduler can run `git -C <your folder> pull --ff-only` on a schedule while the window is closed. The update check in the program is the safer way: it never replaces a file of yours, even if a new version brings a file at the same path, and a plain `git pull` may.
+
 ## Documentation
 
 | | English | Русский | עברית |
