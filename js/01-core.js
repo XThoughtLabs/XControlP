@@ -60,6 +60,46 @@
     if (r.code === "state" && own(UPD_TEXT, r.state)) return { msg: tl(UPD_TEXT[r.state]) + detail, files: [] };
     return { msg: String(r.error || tl("Проверка не удалась")), files: [] };
   }
+  // Версия и «что нового» (pult/release.json; программа отдаёт updates.version_here, version_new, notes).
+  // Номера проверяются ещё раз; текст заметок — из файла выпусков новой версии, в окне только как текст (esc):
+  // язык окна, иначе английский, иначе русский. Здесь, а не в 10-settings.js: его проверяет window_test.
+  const VER_RE = /^[0-9]{1,4}(?:\.[0-9]{1,4}){2}$/;
+  function updVersions() {
+    const U = (window.BOARD && window.BOARD.updates) || {}, ok = (v) => typeof v === "string" && VER_RE.test(v);
+    const here = ok(U.version_here) ? U.version_here : "";
+    const fresh = here && (U.state === "available" || U.state === "updated") && ok(U.version_new) ? U.version_new : "";
+    return { here, fresh, notes: fresh && Array.isArray(U.notes) ? U.notes : [] };
+  }
+  function updNotesHtml(notes) {
+    const pick = (n) => {
+      const o = n && n.notes && typeof n.notes === "object" ? n.notes : {};
+      const lang = [LANG, "en", "ru"].find((k) => Object.prototype.hasOwnProperty.call(o, k) && Array.isArray(o[k]) && o[k].length);
+      return lang ? o[lang].filter((x) => typeof x === "string").slice(0, 10) : [];
+    };
+    const list = (Array.isArray(notes) ? notes : []).slice(0, 10).map((n) => [String(n && n.version || ""), pick(n)]).filter((x) => x[1].length);
+    return list.map(([v, lines]) => (list.length > 1 ? '<p class="upd-note-ver">' + esc(v) + '</p>' : "") +
+      '<ul class="upd-notes">' + lines.map((x) => '<li>' + esc(x) + '</li>').join("") + '</ul>').join("");
+  }
+  // Сообщение о новой версии: при любой найденной проверке (кнопка или фоновая), пока его не закрыли крестиком.
+  // Крестик запоминает эту версию (ui.version_hidden); следующая версия снова покажет сообщение.
+  function renderUpdNote() {
+    const el = $("updnote");
+    if (!el) return;
+    const v = updVersions(), U = (window.BOARD && window.BOARD.updates) || {}, s = window.BOARD && window.BOARD.settings;
+    if (U.state !== "available" || !v.fresh || (s && s.ui && s.ui.version_hidden === v.fresh)) { el.hidden = true; el.innerHTML = ""; return; }
+    el.hidden = false;
+    el.innerHTML = '<div class="upd-note-head"><b>' + esc(tl("Вышла версия")) + ' ' + esc(v.fresh) + ' (' + esc(tl("у вас")) + ' ' + esc(v.here) + ')</b>' +
+      '<button type="button" class="hq-x" data-ui="hide-version:' + esc(v.fresh) + '" aria-label="' + esc(tl("Закрыть это сообщение")) + '" title="' + esc(tl("Закрыть это сообщение")) + '">✕</button></div>' +
+      updNotesHtml(v.notes) + '<div class="upd-note-tools"><button type="button" class="svc-btn" data-set="open:updates">' + esc(tl("Открыть Обновления")) + '</button></div>';
+  }
+  // Строка версии внизу бокового меню: номер той копии, что работает (видна и при выключенной проверке).
+  function renderVersionLine() {
+    const el = $("sidever");
+    if (!el) return;
+    const here = updVersions().here;
+    el.hidden = !here;
+    el.textContent = here ? "XControlP " + here : "";
+  }
 
   const STATUS = {
     "в работе": "work", "работа": "work", "work": "work",
@@ -429,6 +469,7 @@
     html += '<button type="button" data-view="alerts" class="' + (state.view === "alerts" ? "active" : "") + '"><span class="icon">' + navIcon(NAV_ICON.alerts, "⚠") + '</span>' + esc(tl("Тревоги")) +
       (alarms ? '<span class="badge">' + alarms + '</span>' : '<span class="count">0</span>') + '</button>';
     $("nav").innerHTML = html;
+    renderVersionLine(); renderUpdNote();
   }
 
   function renderFocus() {

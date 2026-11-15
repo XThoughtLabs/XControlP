@@ -5,8 +5,8 @@ import json
 import os
 import re
 import threading
-from .config import (ALERTS, ALERT_KEEP_DAYS, ALERT_STATES, CARRY_OPEN, DAY_COPY, HERE, LANGS, SETTINGS,
-                     TRANSLATIONS)
+from .config import (ALERTS, ALERT_KEEP_DAYS, ALERT_STATES, CARRY_OPEN, DAY_COPY, HERE, LANGS, RELEASE_VERSION,
+                     SETTINGS, TRANSLATIONS)
 
 
 def read_translations():
@@ -23,7 +23,8 @@ def read_translations():
 SETTING_DEFAULTS = {"lang": "ru", "icons": "comic", "theme": "dark", "scale": "100", "accent": "orange", "updates": "off",
                     "summary_card": "on"}
 # Память окна (тоже в settings.json, ключ ui): свёрнутые карточки, сводка дня, скрытая крестиком на обзоре,
-# и последний открытый ответ штаба в каждом разделе (зелёная метка гаснет, когда раздел открыт).
+# последний открытый ответ штаба в каждом разделе (зелёная метка гаснет, когда раздел открыт)
+# и версия, сообщение о которой закрыто крестиком (следующая версия покажет новое сообщение).
 UI_KEY = re.compile(r"^[a-z0-9][a-z0-9:_|.-]{0,79}$")
 UI_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$")
 UI_SECTIONS = ("summary", "proposals", "digest", "digest-interesting", "digest-useful")   # the digest tabs: per kind
@@ -61,7 +62,11 @@ def clean_ui(raw):
     hidden = hidden if isinstance(hidden, str) and UI_ID.fullmatch(hidden) else ""
     seen = raw.get("seen") if isinstance(raw.get("seen"), dict) else {}
     seen = {k: v for k, v in seen.items() if k in UI_SECTIONS and isinstance(v, str) and UI_ID.fullmatch(v)}
-    return {"collapsed": folded, "summary_hidden": hidden, "seen": seen}
+    ui = {"collapsed": folded, "summary_hidden": hidden, "seen": seen}
+    version = raw.get("version_hidden")
+    if isinstance(version, str) and RELEASE_VERSION.fullmatch(version):
+        ui["version_hidden"] = version     # only when set: until the first cross, settings.json stays as it was
+    return ui
 
 
 def write_settings(settings):
@@ -79,7 +84,8 @@ def rebuild():
 
 def save_ui(query):
     """Память окна: POST /ui?op=fold&key=…&on=1|0 (стрелка на карточке), op=hide-summary&id=… (крестик на сводке дня
-    в обзоре), op=seen&section=summary|proposals|digest&id=… (раздел с ответом открыт — зелёная метка гаснет)."""
+    в обзоре), op=seen&section=summary|proposals|digest&id=… (раздел с ответом открыт — зелёная метка гаснет),
+    op=hide-version&id=1.0.02 (крестик на сообщении о новой версии)."""
     q = lambda key: ((query or {}).get(key) or [""])[0]
     with SETTINGS_LOCK:
         result = change_ui(q, read_settings())
@@ -105,6 +111,10 @@ def change_ui(q, settings):
         if q("section") not in UI_SECTIONS or not UI_ID.fullmatch(q("id")):
             return {"ok": False, "error": "нет раздела или id ответа"}
         ui["seen"][q("section")] = q("id")
+    elif op == "hide-version":
+        if not RELEASE_VERSION.fullmatch(q("id")):
+            return {"ok": False, "error": "нет номера версии"}
+        ui["version_hidden"] = q("id")
     else:
         return {"ok": False, "error": f"неизвестное действие: {op!r}"}
     write_settings(settings)

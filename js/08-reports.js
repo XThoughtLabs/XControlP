@@ -225,18 +225,20 @@
       await fetch("/ui?op=seen&section=" + encodeURIComponent(key) + "&id=" + encodeURIComponent(latest.id), { method: "POST", headers: { "X-Pult-Token": token } });
     } catch (err) { /* не запомнилось — метка вернётся после перезапуска */ }
   }
+  // Крестики: сводка дня в обзоре (hide-summary) и сообщение о новой версии (hide-version) — сразу прячутся, потом запоминаются.
   async function uiAction(v) {
     const i = String(v || "").indexOf(":"), op = String(v).slice(0, i), id = String(v).slice(i + 1), s = window.BOARD && window.BOARD.settings;
-    if (op !== "hide-summary" || !s) return;
-    s.ui = Object.assign({}, s.ui, { summary_hidden: id });
-    renderHqDay();
+    if ((op !== "hide-summary" && op !== "hide-version") || !s) return;
+    const summary = op === "hide-summary";
+    s.ui = Object.assign({}, s.ui, summary ? { summary_hidden: id } : { version_hidden: id });
+    if (summary) renderHqDay(); else renderUpdNote();
     if (typeof token === "undefined" || !token) return;
     try {
-      const r = await fetch("/ui?op=hide-summary&id=" + encodeURIComponent(id), { method: "POST", headers: { "X-Pult-Token": token } });
+      const r = await fetch("/ui?op=" + op + "&id=" + encodeURIComponent(id), { method: "POST", headers: { "X-Pult-Token": token } });
       const res = await r.json();
       if (!r.ok || !res.ok) throw new Error(res.error || (tl("ответ ") + r.status));
     } catch (err) {
-      showSync("bad", tl("Скрытие сводки не запомнилось"), [["err", esc(String(err && err.message || err))]]);
+      showSync("bad", tl(summary ? "Скрытие сводки не запомнилось" : "Закрытие сообщения не запомнилось"), [["err", esc(String(err && err.message || err))]]);
     }
   }
   const prOpen = () => prAnswers().reduce((n, a) => n + (a.data && Array.isArray(a.data.proposals) ? a.data.proposals.filter((p) => !prMark(prKey(a, p))).length : 0), 0);

@@ -436,6 +436,71 @@ function main() {
       JSON.stringify({ before, after, posts }));
   }
 
+  // XCP-34: the version line at the bottom of the menu and the message about a new version (pult/release.json).
+  const verPage = (lang, updates, ui) => {
+    const p = page({ settings: { lang, ui: ui || { collapsed: [], summary_hidden: "", seen: {} } }, updates }, true);
+    p.ctx.DATA = data();
+    p.run("board = normalize(DATA); renderNav();");
+    p.el = (id) => p.ctx.document.getElementById(id);   // a stub element if the window never drew it (the old code)
+    return p;
+  };
+  const NOTES = [{ version: "1.0.03", notes: { en: ["Third <b>bold</b>"], ru: ["Третья"], he: ["שלישית"] } },
+    { version: "1.0.02", notes: { en: ['<img src=x onerror="alert(1)">'], ru: ["Вторая"] } }];
+  const AVAILABLE = { state: "available", behind: 2, version_here: "1.0.01", version_new: "1.0.03", notes: NOTES };
+  // W26: the line shows the version that runs, also with the check off; a value that is not a version shows nothing.
+  {
+    const on = verPage("ru", { state: "off", version_here: "1.0.01", version_new: "", notes: [] });
+    const bad = verPage("ru", { state: "off", version_here: "<b>1.0</b>" });
+    const none = verPage("ru", { state: "off" });
+    check("W26 version line: «XControlP 1.0.01» with the check off; a bad or missing number hides it",
+      on.el("sidever").textContent === "XControlP 1.0.01" && on.el("sidever").hidden === false && bad.el("sidever").hidden === true
+      && bad.el("sidever").textContent === "" && none.el("sidever").hidden === true, JSON.stringify([on.el("sidever"), bad.el("sidever")].map((e) => [e.textContent, e.hidden])));
+  }
+  // W27: a found update shows the message: both numbers, notes of every newer release in the window's language (English
+  // when a language has none), the cross with this version and the button to the Updates tab; markup in notes is text.
+  {
+    const en = verPage("en", AVAILABLE).el("updnote"), he = verPage("he", AVAILABLE).el("updnote");
+    const ok = (el) => el.hidden === false && el.innerHTML.indexOf("1.0.03") >= 0 && el.innerHTML.indexOf("1.0.01") >= 0
+      && el.innerHTML.indexOf('data-ui="hide-version:1.0.03"') >= 0 && el.innerHTML.indexOf('data-set="open:updates"') >= 0
+      && el.innerHTML.indexOf("<img") < 0 && el.innerHTML.indexOf("<b>bold") < 0 && el.innerHTML.indexOf("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;") >= 0;
+    check("W27 message: numbers, notes per language (English fallback), cross, button; HTML in notes shown as text",
+      ok(en) && ok(he) && en.innerHTML.indexOf("Out now: version 1.0.03 (you have 1.0.01)") >= 0 && en.innerHTML.indexOf("Third &lt;b&gt;bold&lt;/b&gt;") >= 0
+      && he.innerHTML.indexOf("שלישית") >= 0 && he.innerHTML.indexOf("Третья") < 0 && he.innerHTML.indexOf("Вторая") < 0
+      && !/[а-яё]/i.test(en.innerHTML) && !/[а-яё]/i.test(he.innerHTML), JSON.stringify([en.innerHTML, he.innerHTML]));
+  }
+  // W28: no message without a found newer version: the check off, current, a bad new number, no number here.
+  {
+    const cases = [Object.assign({}, AVAILABLE, { state: "off" }), Object.assign({}, AVAILABLE, { state: "current" }), Object.assign({}, AVAILABLE, { state: "updated" }),
+      Object.assign({}, AVAILABLE, { version_new: "1.0.03<b>" }), Object.assign({}, AVAILABLE, { version_new: "" }),
+      Object.assign({}, AVAILABLE, { version_here: "" })];
+    const shown = cases.map((u) => verPage("ru", u).el("updnote")).map((el) => el.hidden === false || el.innerHTML !== "");
+    check("W28 no message when the check is off, current, already updated, the new number is bad or missing, or nothing is known here",
+      shown.every((x) => x === false), JSON.stringify(shown));
+  }
+  // W29: the cross hides the message at once and remembers this version; the next version shows a new message.
+  {
+    const posts = [];
+    const p = verPage("ru", AVAILABLE);
+    Object.assign(p.ctx, { token: "t", fetch: (url) => { posts.push(url); return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }); } });
+    const before = p.el("updnote").hidden;
+    p.run('uiAction("hide-version:1.0.03");');
+    const after = [p.el("updnote").hidden, p.ctx.BOARD.settings.ui.version_hidden];
+    const same = verPage("ru", AVAILABLE, { collapsed: [], seen: {}, version_hidden: "1.0.03" }).el("updnote").hidden;
+    const next = verPage("ru", Object.assign({}, AVAILABLE, { version_new: "1.0.04" }), { collapsed: [], seen: {}, version_hidden: "1.0.03" }).el("updnote").hidden;
+    check("W29 cross: hidden at once, remembered for 1.0.03 (one POST), still hidden for 1.0.03, shown again for 1.0.04",
+      before === false && after[0] === true && after[1] === "1.0.03" && same === true && next === false
+      && JSON.stringify(posts) === JSON.stringify(["/ui?op=hide-version&id=1.0.03"]), JSON.stringify({ before, after, same, next, posts }));
+  }
+  // W30: the notes helper of the Updates tab: one release without a heading, several with their numbers, unknown shapes skipped.
+  {
+    const p = verPage("he", AVAILABLE);
+    const got = p.run('typeof updNotesHtml !== "function" ? null : [updNotesHtml(' + JSON.stringify(NOTES.slice(0, 1)) + '), updNotesHtml(' + JSON.stringify(NOTES) +
+      '), updNotesHtml([null, 5, { version: "1.0.09", notes: { he: "not a list" } }]), updNotesHtml("x")]');
+    check("W30 tab notes: one release without heading, several with numbers, bad entries skipped",
+      Array.isArray(got) && got[0].indexOf("upd-note-ver") < 0 && got[0].indexOf("שלישית") >= 0 && (got[1].match(/upd-note-ver/g) || []).length === 2
+      && got[1].indexOf("1.0.02") >= 0 && got[2] === "" && got[3] === "", JSON.stringify(got));
+  }
+
   console.log("\nPassed " + PASSED.length + ", failed " + FAILED.length + (FAILED.length ? ": " + FAILED.join(", ") : ""));
   return FAILED.length ? 1 : 0;
 }

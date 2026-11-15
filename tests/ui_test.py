@@ -110,6 +110,21 @@ def main():
               s3["ok"] and s4["ok"] and kept == {"summary": "request-a-summary", "proposals": "request-b-proposals",
                                                  "digest-interesting": "request-i-digest-interesting", "digest-useful": "request-u-digest-useful"}, repr(kept))
 
+        # V9 (XCP-34): the cross on the new-version message remembers that version; a value that is not a version is
+        # refused (also with a trailing newline) and dropped when read; until the first cross the key is not written at all.
+        unset = settings.clean_ui({"collapsed": [], "summary_hidden": "", "seen": {}})
+        dropped = [settings.clean_ui({"version_hidden": v}) for v in ("<b>", "1.0", "1.0.02\n", 5, "1.0.0.2")]
+        v1 = settings.save_ui(q(op="hide-version", id="1.0.02"))
+        bad = [settings.save_ui(q(op="hide-version", id=v)) for v in ("1.0", "1.0.02\n", "../x", "")]
+        settings.save_ui(q(op="fold", key="all:tiles:9", on="1"))
+        kept = settings.read_settings()["ui"]
+        v2 = settings.save_ui(q(op="hide-version", id="1.0.10"))
+        check("V9 new-version cross remembered per version, bad values refused and dropped, not written until set",
+              "version_hidden" not in unset and all("version_hidden" not in d for d in dropped) and v1["ok"] and not any(r["ok"] for r in bad)
+              and kept.get("version_hidden") == "1.0.02" and "all:tiles:9" in kept["collapsed"] and v2["ok"]
+              and settings.read_settings()["ui"].get("version_hidden") == "1.0.10", repr((dropped, bad, kept)))
+        settings.save_ui(q(op="fold", key="all:tiles:9", on="0"))
+
         # V5: another setting (the language, the overview card switch) keeps the window's memory.
         settings.save_settings(q(lang="en"))
         settings.save_settings(q(summary_card="off"))

@@ -68,7 +68,10 @@
     const U = (window.BOARD && window.BOARD.updates) || {}, on = u.updates === "on", st = UPD_TEXT[U.state] ? U.state : "off";
     const line = esc(tl(on && st === "off" ? "Ещё не проверялось — нажмите «Проверить сейчас»" : UPD_TEXT[st])) + (st === "available" ? " " + esc(tl("Новых коммитов")) + ": " + (U.behind | 0) + "." : "") +
       (U.error && (st === "unavailable" || st === "error") ? ": " + esc(U.error) : "");
-    return '<section class="set-sec"><h3>' + esc(tl("Проверка обновлений")) + '</h3><div class="set-row">' +
+    const V = updVersions();
+    return (V.here ? '<section class="set-sec"><h3>' + esc(tl("Версия")) + '</h3><p class="upd-ver">' + esc(tl("Ваша версия")) + ': <b>' + esc(V.here) + '</b>' +
+        (V.fresh ? ' · ' + esc(tl("Новая версия")) + ': <b>' + esc(V.fresh) + '</b>' : "") + '</p>' + (V.fresh ? updNotesHtml(V.notes) : "") + '</section>' : "") +
+      '<section class="set-sec"><h3>' + esc(tl("Проверка обновлений")) + '</h3><div class="set-row">' +
       chip("updates", "off", esc(tl("Выключена")), !on) + chip("updates", "on", esc(tl("Включена")), on) + '</div>' +
       '<p class="set-note">' + esc(tl("Когда включена, Пульт при запуске и при синхронизации спрашивает GitHub, есть ли новая версия программы. Обновляет только по кнопке; ваши данные не трогает.")) + '</p></section>' +
       '<section class="set-sec"><h3>' + esc(tl("Состояние")) + '</h3><p class="upd-line upd-' + st + '">' + line + '</p>' +

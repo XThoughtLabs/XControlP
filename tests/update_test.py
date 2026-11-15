@@ -417,6 +417,109 @@ def main():
         check("U30 another refusal of the merge: code update-failed, git's line as detail, state error", not r["ok"]
               and r.get("code") == "update-failed" and r.get("detail") == "fatal: something else" and r["updates"]["state"] == "error", repr(r))
 
+        # XCP-34: the version number and «what's new» (pult/release.json). Missing names fail each check, not the run.
+        parse, key, newer = (getattr(up, n, None) for n in ("parse_release", "version_key", "newer"))
+        rel = lambda version, *releases: json.dumps({"version": version, "releases": [
+            {"version": v, "notes": {"en": ["E " + v], "ru": ["Р " + v], "he": ["ע " + v]}} for v in releases]}, ensure_ascii=False)
+        limit = getattr(up, "RELEASE_MAX", 65536)
+
+        # U31: the release file is read only when it is whole and small: a good one; broken, too big, a bad own number,
+        # too deep: none. A release with a bad number is skipped; only the window's languages and short lines are kept.
+        good = parse(rel("1.0.02", "1.0.02", "1.0.01").encode("utf-8")) if parse else None
+        messy = parse(json.dumps({"version": "1.0.02", "releases": [{"version": "1.0.2.1"}, "x", {"version": "1.0.02", "notes": {
+            "en": ["  a  ", "", 5, "b" * 400] + ["c"] * 20, "de": ["x"], "ru": "not a list"}}]}).encode("utf-8")) if parse else None
+        broken = [parse(b) if parse else "no parse" for b in (b"{", "﻿{}".encode("utf-8"), b"\xff\xfe", rel("1.0", "1.0.01").encode("utf-8"),
+                                                              rel("1.0.02\n", "1.0.02").encode("utf-8"), b" " * (limit + 1) + b"{}",
+                                                              b"[" * 30000 + b"]" * 30000, b"[]")]   # 60 000 bytes deep: under the size limit
+        sized = parse((rel("1.0.02", "1.0.02") + " " * (limit - len(rel("1.0.02", "1.0.02").encode("utf-8")))).encode("utf-8")) if parse else None
+        check("U31 release file: good read; broken, too big, bad number, too deep refused; bad releases skipped, notes trimmed",
+              good == {"version": "1.0.02", "releases": [{"version": "1.0.02", "notes": {"en": ["E 1.0.02"], "ru": ["Р 1.0.02"], "he": ["ע 1.0.02"]}},
+                                                          {"version": "1.0.01", "notes": {"en": ["E 1.0.01"], "ru": ["Р 1.0.01"], "he": ["ע 1.0.01"]}}]}
+              and messy is not None and [r["version"] for r in messy["releases"]] == ["1.0.02"]
+              and messy["releases"][0]["notes"] == {"en": ["a", "b" * 300] + ["c"] * 8} and all(b is None for b in broken)
+              and sized is not None, repr((messy, broken[:5])))
+
+        # U32: numbers compare part by part; «newer» gives the source's number and the notes of releases above the one here,
+        # up to the source's, newest first; nothing when either file is missing or the source is not newer.
+        if key and newer and parse:
+            here, there = parse(rel("1.0.01", "1.0.01").encode()), parse(rel("1.0.10", "1.0.11", "1.0.09", "1.0.10", "1.0.01", "0.9.99").encode())
+            got = newer(here, there)
+            same = [newer(here, parse(rel("1.0.1", "1.0.1").encode())), newer(here, parse(rel("1.0.00", "1.0.00").encode())),
+                    newer(None, there), newer(here, None)]
+            order = key("1.0.10") > key("1.0.09") and key("1.0.1") == key("1.0.01") and key("1.1.00") > key("1.0.99") and key("2.0.00") > key("1.9.99")
+        else:
+            got, same, order = None, None, False
+        check("U32 numbers part by part (1.0.10 > 1.0.09, 1.0.1 = 1.0.01); notes of the newer releases only, newest first",
+              order and got is not None and got[0] == "1.0.10" and [r["version"] for r in got[1]] == ["1.0.10", "1.0.09"]
+              and all(x == ("", []) for x in same), repr((got, same)))
+
+        # U33: the check reads the update's release file from the fetched objects: one fetch only, the new number and the notes;
+        # the program's own file stays the version that runs, even when the file on disk changes.
+        remote, writer, program = world(base, "u33")
+        force(writer, "pult/release.json", rel("1.0.01", "1.0.01"), "release 1.0.01")
+        sh(program, "pull", "-q", "--ff-only")
+        getattr(up, "_RUNNING", {}).pop(str(program), None)
+        force(writer, "pult/release.json", rel("1.0.03", "1.0.03", "1.0.02", "1.0.01"), "release 1.0.03")
+        calls, real_run = [], up.subprocess.run
+        up.subprocess.run = lambda *a, **k: calls.append(list(a[0])) or real_run(*a, **k)
+        try:
+            r = up.check(program)
+        finally:
+            up.subprocess.run = real_run
+        fetches = [c for c in calls if "fetch" in c]
+        (program / "pult" / "release.json").write_text(rel("9.9.99", "9.9.99"), encoding="utf-8")
+        running = up.running_release(program)["version"] if hasattr(up, "running_release") else None
+        check("U33 newer source: number 1.0.03 and notes of 1.0.03 and 1.0.02 from the fetched objects; one fetch; running version read once",
+              r["state"] == "available" and r.get("version_new") == "1.0.03" and [n["version"] for n in r.get("notes", [])] == ["1.0.03", "1.0.02"]
+              and r["notes"][0]["notes"]["he"] == ["ע 1.0.03"] and len(fetches) == 1 and running == "1.0.01", repr((r, len(fetches), running)))
+
+        # U34: an update without a release file, with a broken one, or with the same number: works as before, without a number or notes.
+        found = []
+        for i, text in enumerate((None, "{broken", rel("1.0.1", "1.0.1"))):      # 1.0.1 is the same number as 1.0.01
+            remote, writer, program = world(base, f"u34{i}")
+            force(writer, "pult/release.json", rel("1.0.01", "1.0.01"), "release 1.0.01")
+            sh(program, "pull", "-q", "--ff-only")
+            if text is None:
+                sh(writer, "rm", "-q", "pult/release.json")
+                sh(writer, "commit", "-q", "-m", "no release file")
+                sh(writer, "push", "-q", "origin", "modules")
+            else:
+                force(writer, "pult/release.json", text, "release file " + str(i))
+            r = up.check(program)
+            found.append((r["state"], r.get("version_new"), r.get("notes")))
+        check("U34 no file, a broken file or the same number in the update: available as before, no number, no notes",
+              found == [("available", "", [])] * 3, repr(found))
+
+        # U35: a release file over the size limit in the update: not read at all (its size is asked first), no notes.
+        remote, writer, program = world(base, "u35")
+        force(writer, "pult/release.json", rel("1.0.01", "1.0.01"), "release 1.0.01")
+        sh(program, "pull", "-q", "--ff-only")
+        force(writer, "pult/release.json", rel("1.0.02", "1.0.02") + " " * (limit + 1), "too big")
+        blobs, real_raw = [], up.git_raw
+        up.git_raw = lambda root, *a, **k: (blobs.append(a) if a[:2] == ("cat-file", "blob") else None) or real_raw(root, *a, **k)
+        try:
+            r = up.check(program)
+        finally:
+            up.git_raw = real_raw
+        check("U35 too big a release file in the update: its content is never read, no number, no notes",
+              r["state"] == "available" and r.get("version_new") == "" and r.get("notes") == [] and not blobs, repr((r, blobs)))
+
+        # U36: the window gets the version that runs with the check off (no git), and no new number while it is off.
+        real_settings = up.read_settings
+        up.read_settings = lambda: {"updates": "off"}
+        up._STATE.update(restart=False, version_new="1.0.03", notes=[{"version": "1.0.03", "notes": {}}])
+        calls = []
+        up.subprocess.run = lambda *a, **k: calls.append(a) or real_run(*a, **k)
+        try:
+            shown = up.view()
+        finally:
+            up.subprocess.run = real_run
+            up.read_settings = real_settings
+            up._STATE.update(version_new="", notes=[])
+        own = json.loads((ROOT / "pult" / "release.json").read_text(encoding="utf-8"))["version"] if (ROOT / "pult" / "release.json").exists() else "?"
+        check("U36 check off: the window sees the version here and no new number; no git command",
+              shown.get("version_here") == own and shown.get("version_new") == "" and shown.get("notes") == [] and not calls, repr(shown))
+
         # U17: an option-like branch name never reaches git fetch: the check refuses to run.
         remote, writer, program = world(base, "u17")
         sh(program, "update-ref", "refs/heads/--upload-pack=touch", "HEAD")

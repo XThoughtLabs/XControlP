@@ -1,0 +1,22 @@
+{
+ "version": "1.0.01",
+ "releases": [
+  {
+   "version": "1.0.01",
+   "notes": {
+    "en": [
+     "The version number is shown at the bottom of the menu and in Settings → Updates.",
+     "When an update is found, a message says briefly what is new in it; the cross closes it until the next version."
+    ],
+    "ru": [
+     "Номер версии виден внизу меню и в «Настройках» → «Обновления».",
+     "Когда найдено обновление, сообщение коротко говорит, что в нём нового; крестик закрывает его до следующей версии."
+    ],
+    "he": [
+     "מספר הגרסה מוצג בתחתית התפריט ובהגדרות ← עדכונים.",
+     "כשנמצא עדכון, הודעה מספרת בקצרה מה חדש בו; הצלב סוגר אותה עד הגרסה הבאה."
+    ]
+   }
+  }
+ ]
+}

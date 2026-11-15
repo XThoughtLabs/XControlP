@@ -806,7 +806,7 @@
   .dp-day .n { text-align: end; font-variant-numeric: tabular-nums; }
   @media print { .dp-add, .dp-acts, .dp-status, .dp-claude { display: none; } }
   @media print {
-    .actions, nav, .syncbox { display: none; }
+    .actions, nav, .syncbox, .updnote { display: none; }
     .bottom { position: static; }
   }
 
@@ -914,6 +914,15 @@
   .upd-line { margin: 4px 0 8px; }
   .upd-line.upd-available, .upd-line.upd-updated { color: var(--good); font-weight: 700; }
   .upd-line.upd-error, .upd-line.upd-diverged, .upd-line.upd-ahead { color: var(--serious); }
+  /* Версия и «что нового» (XCP-34): строка внизу меню, сообщение о новой версии, заметки во вкладке «Обновления». */
+  .side-ver { color: var(--muted); font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; margin-top: -8px; }
+  .updnote { background: var(--card); border: 1px solid var(--line); border-inline-start: 3px solid var(--good); border-radius: 12px; padding: 12px 16px; }
+  .upd-note-head { display: flex; align-items: center; gap: 10px; }
+  .upd-note-head .hq-x { margin-inline-start: auto; }
+  .upd-note-ver { margin: 8px 0 0; font-weight: 700; font-size: 13px; color: var(--text-2); }
+  .upd-notes { margin: 6px 0 0; padding-inline-start: 20px; line-height: 1.45; }
+  .upd-note-tools { margin-top: 10px; }
+  .upd-ver { margin: 4px 0 0; }
   /* Метки разделов штаба (XCP-25): жёлтая — запрос ждёт ответа, зелёная — пришёл ответ, раздел ещё не открывали. */
   nav button.hq-wait { box-shadow: inset 4px 0 0 var(--warning); }
   nav button.hq-wait .count { background: var(--warning); color: #1a1300; border-radius: 9px; padding: 0 7px; font-weight: 700; }

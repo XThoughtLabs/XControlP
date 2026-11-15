@@ -11,23 +11,35 @@ a file at its path or a folder in its place. So the update first lists such file
 refuses, naming them; and the merge itself runs with --no-overwrite-ignore, so git refuses as well (its refusal
 is read by the kind of message: the user's untracked files in the way, or a local edit of a program file).
 Every answer of the two buttons carries a code, so the window can show it in its own language.
-After an update the program asks to be restarted."""
+After an update the program asks to be restarted.
+
+The version number and «what's new» come from one file, pult/release.json: the number of the copy that runs
+(read once, from disk) and, when the check finds new commits, the same file of the fetched update, read from the
+objects git has already fetched (no second network call). The window gets the new number and the notes of every
+release newer than the one here; without the file, or with a broken one, everything works as before, without notes."""
 import datetime
+import json
 import os
+import pathlib
 import re
 import shutil
 import subprocess
 import threading
-from .config import (GIT_NO_WINDOW, HERE)
+from .config import (GIT_NO_WINDOW, HERE, LANGS, RELEASE_MAX, RELEASE_PATH, RELEASE_VERSION)
 
 FETCH_TIMEOUT = 30        # seconds for git fetch (the network)
 LOCAL_TIMEOUT = 10        # seconds for every other git command
 # a branch or remote name the check accepts: no option-like or unusual names reach git
 NAME = re.compile(r"[A-Za-z0-9._][A-Za-z0-9._/-]{0,199}")
 STATES = ("off", "checking", "current", "available", "ahead", "diverged", "unavailable", "error", "updated")
+RELEASES_READ = 50       # entries of a release file looked at
+RELEASES_SHOWN = 10      # newer releases whose notes reach the window
+NOTES_MAX = 10           # lines of notes per release and language
+NOTE_MAX = 300           # characters per line of notes
 
 _LOCK = threading.Lock()          # one check or update at a time
-_STATE = {"state": "off", "behind": 0, "ahead": 0, "source": "", "error": "", "checked": "", "restart": False, "version": 0}
+_STATE = {"state": "off", "behind": 0, "ahead": 0, "source": "", "error": "", "checked": "", "restart": False, "version": 0,
+          "version_new": "", "notes": []}
 _STAMP = [0]                      # grows on every change of the state: data.js is rebuilt
 
 
@@ -188,6 +200,87 @@ def blocked_by_git(lines):
     return over, local
 
 
+def version_key(text):
+    """A version number as numbers, part by part: 1.0.10 is newer than 1.0.09, and 1.0.1 equals 1.0.01."""
+    return tuple(int(part) for part in text.split("."))
+
+
+def parse_release(raw):
+    """A release file (bytes) as {"version": "1.0.01", "releases": [{"version", "notes": {language: [lines]}}]},
+    or None: too big, not UTF-8 JSON, or its own number is not like 1.0.01. A release with a bad number is skipped;
+    notes keep only the window's languages and non-empty lines of text, each cut to NOTE_MAX characters."""
+    if not isinstance(raw, bytes) or len(raw) > RELEASE_MAX:
+        return None
+    try:
+        data = json.loads(raw.decode("utf-8-sig"))
+    except (UnicodeDecodeError, ValueError, RecursionError):
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("version"), str) or not RELEASE_VERSION.fullmatch(data["version"]):
+        return None
+    releases = []
+    for item in (data["releases"] if isinstance(data.get("releases"), list) else [])[:RELEASES_READ]:
+        if not isinstance(item, dict) or not isinstance(item.get("version"), str) or not RELEASE_VERSION.fullmatch(item["version"]):
+            continue
+        notes = item["notes"] if isinstance(item.get("notes"), dict) else {}
+        kept = {}
+        for lang in LANGS:
+            lines = notes.get(lang)
+            lines = [line.strip()[:NOTE_MAX] for line in lines if isinstance(line, str) and line.strip()][:NOTES_MAX] \
+                if isinstance(lines, list) else []
+            if lines:
+                kept[lang] = lines
+        releases.append({"version": item["version"], "notes": kept})
+    return {"version": data["version"], "releases": releases}
+
+
+def local_release(root):
+    """The release file in the program's folder, or None (missing, unreadable or broken)."""
+    try:
+        with open(pathlib.Path(root) / RELEASE_PATH, "rb") as f:
+            raw = f.read(RELEASE_MAX + 1)
+    except OSError:
+        return None
+    return parse_release(raw)
+
+
+_RUNNING = {}                     # the release file of each program folder as first read: the version that runs
+
+
+def running_release(root):
+    """The version that runs: read once. After an update the file on disk is newer, but the program is not until restarted."""
+    key = str(root)
+    if key not in _RUNNING:
+        _RUNNING[key] = local_release(root)
+    return _RUNNING[key]
+
+
+def source_release(root, ref):
+    """The release file of the fetched update, from the objects git already has (no network), or None."""
+    obj = ref + ":" + RELEASE_PATH
+    try:
+        if int(git(root, "cat-file", "-s", obj)) > RELEASE_MAX:
+            return None
+        return parse_release(git_raw(root, "cat-file", "blob", obj))
+    except (UpdateError, ValueError):
+        return None
+
+
+def newer(here, there):
+    """(the new version's number, the notes of every release newer than here up to it, newest first), or ("", [])
+    when either file is missing or the source's number is not greater than the one here."""
+    if not here or not there:
+        return "", []
+    low, high = version_key(here["version"]), version_key(there["version"])
+    if high <= low:
+        return "", []
+    found = {}
+    for release in there["releases"]:
+        key = version_key(release["version"])
+        if low < key <= high:
+            found.setdefault(key, release)
+    return there["version"], [found[key] for key in sorted(found, reverse=True)][:RELEASES_SHOWN]
+
+
 def set_state(**values):
     _STATE.update(values)
     _STAMP[0] += 1
@@ -202,18 +295,19 @@ def check(root=None, fetch=True):
         try:
             source, why = update_source(root)
             if source is None:
-                set_state(state="unavailable", behind=0, ahead=0, source="", error=why, checked=now_text())
+                set_state(state="unavailable", behind=0, ahead=0, source="", error=why, checked=now_text(), version_new="", notes=[])
                 return dict(_STATE)
             remote, branch, ref = source
             if fetch:
                 git(root, "fetch", "--quiet", "--no-tags", remote, branch, timeout=FETCH_TIMEOUT)
             ahead, behind = compare(root, ref)
             state = "current" if not ahead and not behind else "available" if not ahead else "ahead" if not behind else "diverged"
-            set_state(state=state, behind=behind, ahead=ahead, source=ref, error="", checked=now_text())
+            fresh, notes = newer(running_release(root), source_release(root, ref)) if state == "available" else ("", [])
+            set_state(state=state, behind=behind, ahead=ahead, source=ref, error="", checked=now_text(), version_new=fresh, notes=notes)
         except UpdateError as exc:
-            set_state(state="error", error=str(exc), checked=now_text())
+            set_state(state="error", error=str(exc), checked=now_text(), version_new="", notes=[])
         except Exception as exc:     # the program goes on whatever happens here
-            set_state(state="error", error=f"{type(exc).__name__}: {exc}", checked=now_text())
+            set_state(state="error", error=f"{type(exc).__name__}: {exc}", checked=now_text(), version_new="", notes=[])
         return dict(_STATE)
 
 
@@ -263,11 +357,13 @@ def enabled():
 
 
 def view():
-    """For data.js: the setting and the last state. While the setting is off, nothing is checked."""
+    """For data.js: the setting, the last state and the version here (shown even with the check off).
+    While the setting is off, nothing is checked and no new version is shown."""
     on = enabled()
-    state = dict(_STATE) if on or _STATE["restart"] else dict(_STATE, state="off")
+    state = dict(_STATE) if on or _STATE["restart"] else dict(_STATE, state="off", version_new="", notes=[])
     state.pop("version", None)
-    return dict(state, enabled=on)
+    here = running_release(HERE)
+    return dict(state, enabled=on, version_here=here["version"] if here else "")
 
 
 def stamp():

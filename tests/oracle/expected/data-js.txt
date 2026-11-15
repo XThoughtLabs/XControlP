@@ -637,6 +637,9 @@ window.BOARD = {
   "error": "",
   "checked": "",
   "restart": false,
-  "enabled": false
+  "version_new": "",
+  "notes": [],
+  "enabled": false,
+  "version_here": "1.0.01"
  }
 };
