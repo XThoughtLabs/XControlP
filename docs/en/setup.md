@@ -241,7 +241,7 @@ An event whose title holds `night` (or `ночн`, `לילה`) and starts at 00:
 
 **Research.** `research/research.json` lists research entries; their texts are `.md` files in the same folder. The format is in the [assistant guide](assistant.md#research).
 
-**Digests (optional).** Daily news digests from a git repository of your own: set `digest_repo` in `projects.json` (or the environment variable `PULT_DIGEST_REPO`). The repository holds `digests/YYYY/MM/YYYY-MM-DD.json`; your marks «interesting» and «useful» go to `marks/YYYY/MM/YYYY-MM-DD.json`, and the program commits and pushes them itself. Without `digest_repo` the section stays empty and no git command runs.
+**Digests (optional).** Daily news digests from a git repository of your own: set `digest_repo` in `projects.json` (or the environment variable `PULT_DIGEST_REPO`). The repository holds `digests/YYYY/MM/YYYY-MM-DD.json`; your marks «interesting» and «useful» go to `marks/YYYY/MM/YYYY-MM-DD.json`, and the program commits and pushes them itself. Without `digest_repo` the section stays empty and no git command runs. How the digest is written every morning, its file format and the text of the morning task: [Daily digest](digests.md).
 
 ## 8. Translations of your data
 

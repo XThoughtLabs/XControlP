@@ -333,8 +333,10 @@ function main() {
     const bad = ["en", "he"].flatMap((l) => Object.keys(dict[l]).filter((k) => p.run("CORE_RE.exec(" + JSON.stringify(k) + ")[2]") !== k).map((k) => l + ": " + k));
     const en = page({ settings: { lang: "en" } }, true);
     const names = en.run('JSON.stringify([prKindName("digest-interesting"), prKindName("digest-useful"), tl("Напишите в чате штаба: «разбери запрос». Сводка появится в разделе «Сводка дня».")])');
-    check("W19 no translation key with edge characters; the kind names and the toast are translated",
-      bad.length === 0 && !/[а-яё]/i.test(names.replace("разбери запрос", "")), JSON.stringify(bad.slice(0, 5)) + " " + names);
+    // XCP-33: no English or Hebrew translation keeps a Russian word (the request phrase was «разбери запрос»).
+    const cyr = ["en", "he"].flatMap((l) => Object.entries(dict[l]).filter(([, v]) => /[а-яё]/i.test(v)).map(([k]) => l + ": " + k));
+    check("W19 no translation key with edge characters; no Russian letter in an English or Hebrew translation; the kind names and the toast are translated",
+      bad.length === 0 && cyr.length === 0 && !/[а-яё]/i.test(names), JSON.stringify(bad.slice(0, 5)) + " " + JSON.stringify(cyr.slice(0, 5)) + " " + names);
   }
   {
     const p = dgPage();

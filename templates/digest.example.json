@@ -1,0 +1,65 @@
+{
+ "date": "2026-11-15",
+ "generated_at": "2026-11-15T05:52:06+02:00",
+ "items": [
+  {
+   "id": "2026-11-15-01",
+   "topic": "agents-memory",
+   "title": "Example Labs opens its file format for agent memory",
+   "summary": "Example Labs published version 1.0 of an open file format for agent memory, with a reference reader under the MIT license.",
+   "why": "If your assistant keeps notes between sessions, one shared format would make them easier to move between tools.",
+   "url": "https://example.com/news/agent-memory-format",
+   "source": "Example Labs blog",
+   "published": "2026-11-14",
+   "i18n": {
+    "he": {
+     "title": "Example Labs פותחת את פורמט הקבצים שלה לזיכרון של סוכנים",
+     "summary": "Example Labs פרסמה את גרסה 1.0 של פורמט קבצים פתוח לזיכרון של סוכנים, עם קוד ייחוס לקריאת הקבצים ברישיון MIT.",
+     "why": "אם העוזר שלכם שומר הערות בין שיחות, פורמט משותף אחד יקל להעביר אותן בין כלים."
+    }
+   }
+  },
+  {
+   "id": "2026-11-15-02",
+   "topic": "security-storage",
+   "title": "A backup service reports leaked access keys",
+   "summary": "Example Backup said on 14 November that the access keys of about 2,000 customers were exposed through a misconfigured log server; the keys have been replaced.",
+   "why": "A reminder to keep keys out of logs and to replace them on a schedule.",
+   "url": "https://example.org/security/backup-keys",
+   "source": "Example Security News",
+   "published": "2026-11-14",
+   "i18n": {
+    "he": {
+     "title": "שירות גיבוי מדווח על דליפה של מפתחות גישה",
+     "summary": "Example Backup הודיעה ב-14 בנובמבר שמפתחות הגישה של כ-2,000 לקוחות נחשפו דרך שרת יומנים שהוגדר בצורה שגויה; המפתחות הוחלפו.",
+     "why": "תזכורת להרחיק מפתחות מהיומנים ולהחליף אותם לפי לוח זמנים."
+    }
+   }
+  },
+  {
+   "id": "2026-11-15-03",
+   "topic": "hardware",
+   "title": "A new laptop chip with a faster neural engine",
+   "summary": "Example Silicon announced a laptop processor whose neural engine is twice as fast as the previous generation; shipments start in the first quarter of 2027.",
+   "why": "Worth knowing if you plan to run local models on a laptop next year.",
+   "url": "https://example.net/press/new-laptop-chip",
+   "source": "Example Silicon press release",
+   "published": "2026-11-13",
+   "i18n": {
+    "he": {
+     "title": "שבב חדש למחשבים ניידים עם מנוע עצבי מהיר יותר",
+     "summary": "Example Silicon הכריזה על מעבד למחשבים ניידים שהמנוע העצבי שלו מהיר פי שניים מהדור הקודם; המשלוחים יתחילו ברבעון הראשון של 2027.",
+     "why": "כדאי לדעת אם אתם מתכננים להריץ מודלים מקומיים על מחשב נייד בשנה הבאה."
+    }
+   }
+  }
+ ],
+ "unverified": [
+  "No primary source confirmed a reported price cut for the model API of Example Cloud, so the item was left out."
+ ],
+ "unverified_i18n": {
+  "he": [
+   "שום מקור ראשוני לא אישר דיווח על הורדת מחיר ב-API של המודלים של Example Cloud, ולכן הפריט הושמט."
+  ]
+ }
+}

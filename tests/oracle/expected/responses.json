@@ -27,10 +27,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 136072,
+  "bytes": 135752,
   "method": "GET",
   "path": "/i18n.js",
-  "sha256": "caa2124c0d0ce8b8fdce0bf8a67209cb343309eccdae9bbe10e12b956007497f",
+  "sha256": "20753d0d241b786f63577bfbc84f89c4fd647f5c170cdc5aaec71b0da4dc981b",
   "status": 200,
   "step": "G04",
   "type": "text/javascript; charset=utf-8"

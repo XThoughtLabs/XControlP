@@ -19,6 +19,7 @@ XControlP is built to be kept together with an AI assistant, for example Claude.
 - **Calendar.** Your Google calendars, read-only (optional).
 - **Ideas** from Markdown files, with statuses, history and statistics; ideas you offer as services.
 - **Research, reports and proposals** prepared by your assistant, in three languages.
+- **Daily news digests** (optional): a scheduled task of your assistant writes a digest of the news on your topics into a git repository of your own every morning; you mark items «interesting» or «useful», collect them and ask for ideas for your projects.
 - **Settings:** language (the window mirrors for Hebrew), dark or light theme, text size, accent colour, two icon styles.
 
 ## Requirements
@@ -40,6 +41,15 @@ If the shortcut does not start, double-click `start_fallback.cmd`.
 
 Your data lives in files next to the program: `projects.json`, the day plan `day.db`, the calendar, requests and answers, research and so on. All of them are listed in `.gitignore`, so a copy of XControlP kept in git does not commit them. Do not publish these files.
 
+## How the daily digest is built
+
+1. You create a private git repository for the digests and set `digest_repo` in `projects.json`.
+2. Every morning a scheduled task of your AI assistant (for example, a scheduled task in Claude Code) searches the news on your topics, reads each page itself and writes `digests/YYYY/MM/YYYY-MM-DD.json`: 5 to 8 items, each with a summary, a line on why it matters to you, a link and the publication date; what it could not confirm goes under «Not verified». It commits and pushes the file to `main`.
+3. **Sync data** brings the new digest into the window. Your «interesting» and «useful» marks are committed and pushed to the same repository.
+4. The **Interesting** and **Useful** tabs collect the marked items; **Ideas for your projects** asks your assistant what they mean for your projects, and the answer comes as proposals.
+
+The file format, a ready text for the morning task and what to check: [Daily digest](docs/en/digests.md). Templates: [`templates/digest-task.example.md`](templates/digest-task.example.md), [`templates/digest.example.json`](templates/digest.example.json).
+
 ## Updates
 
 XControlP is in active development: new versions come out regularly on the `main` branch.
@@ -56,6 +66,7 @@ XControlP is in active development: new versions come out regularly on the `main
 | Setup: install, projects, progress sources, calendar | [setup](docs/en/setup.md) | [настройка](docs/ru/setup.md) | [הגדרה](docs/he/setup.md) |
 | Using the window | [using](docs/en/using.md) | [работа с окном](docs/ru/using.md) | [שימוש בחלון](docs/he/using.md) |
 | Working with an AI assistant | [assistant](docs/en/assistant.md) | [ассистент](docs/ru/assistant.md) | [עוזר](docs/he/assistant.md) |
+| Daily news digest: repository, file format, the morning task | [digests](docs/en/digests.md) | [сводки](docs/ru/digests.md) | [סיכומים](docs/he/digests.md) |
 
 Rules for an AI assistant working in this folder: [AGENTS.md](AGENTS.md).
 
