@@ -40,6 +40,17 @@
     if (LANG === "ru" || typeof s !== "string" || !CYR_RE.test(s)) return s;
     return /[<>]|="/.test(s) ? tparts(s, (x) => tx(x)) : tx(s);
   }
+  // Отказ кнопки «Обновить программу» (вкладка «Обновления», 10-settings.js): по коду — переведённый текст и файлы,
+  // которые мешают; без известного кода — текст программы как есть. Здесь, а не в 10-settings.js: его проверяет window_test.
+  const UPD_REFUSAL = {
+    "local-changes": "В файлах программы есть свои правки — обновление не запускалось. Файлы с правками",
+    "incoming-over-files": "Обновление принесло бы файлы на место ваших файлов, они были бы потеряны — обновление не запускалось. Перенесите эти файлы в другую папку и обновите снова" };
+  function updRefusal(res) {
+    const r = res && typeof res === "object" ? res : {};
+    const known = typeof r.code === "string" && Object.prototype.hasOwnProperty.call(UPD_REFUSAL, r.code);
+    return { msg: known ? tl(UPD_REFUSAL[r.code]) : String(r.error || tl("Проверка не удалась")),
+      files: known && Array.isArray(r.files) ? r.files.slice(0, 20).map(String) : [] };
+  }
 
   const STATUS = {
     "в работе": "work", "работа": "work", "work": "work",

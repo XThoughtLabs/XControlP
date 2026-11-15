@@ -344,6 +344,54 @@ function main() {
     check("W20 a topic without a chip on the tab falls back to all topics", topic === "all" && html.includes("Показано: 2"), topic + " " + (html.match(/Показано: \d+/) || [""])[0]);
   }
 
+  // XCP-27: «Предложения» puts out its own mark and posts it once; each digest tab posts its own kind once;
+  // the lookup is per kind (a newer «Полезное» answer is not hidden by an «Интересное» one already opened).
+  {
+    const posts = [];
+    const fetchStub = (url) => { posts.push(url); return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }); };
+    const p = hqPage([ans("request-p-proposals", "proposals", "2026-01-15T09:00")], []);
+    Object.assign(p.ctx, { token: "t", fetch: fetchStub });
+    const before = navClass(p, "proposals");
+    p.run("renderProposals(); renderProposals();");
+    const after = navClass(p, "proposals");
+    const d = page({ settings: { lang: "ru" }, digests, answers: [] });
+    Object.assign(d.ctx, { token: "t", fetch: fetchStub, stamp: (x) => String(x || ""), refresh() {}, showSync() {} });
+    d.ctx.DATA = data(undefined, { answers: [ans("request-u-digest-useful", "digest-useful", "2026-01-15T10:00"),
+      ans("request-i-digest-interesting", "digest-interesting", "2026-01-15T09:00")], requests: [] });
+    d.run("board = normalize(DATA); state.view = 'digest'; state.dgTab = 'interesting'; renderDigest(); renderDigest();" +
+      " state.dgTab = 'useful'; renderDigest(); renderDigest();");
+    const want = ["/ui?op=seen&section=proposals&id=request-p-proposals", "/ui?op=seen&section=digest-interesting&id=request-i-digest-interesting",
+      "/ui?op=seen&section=digest-useful&id=request-u-digest-useful"];
+    check("W21 «Предложения» and each digest tab put out their own mark and post their own kind, once",
+      before === " hq-new" && after.indexOf("hq-new") < 0 && JSON.stringify(posts) === JSON.stringify(want), JSON.stringify({ before, after, posts }));
+  }
+  {
+    const seen = { collapsed: [], summary_hidden: "", seen: { "digest-interesting": "request-i-digest-interesting" } };
+    const d = page({ settings: { lang: "ru", ui: seen }, digests, answers: [] });
+    Object.assign(d.ctx, { token: "", stamp: (x) => String(x || ""), refresh() {}, showSync() {} });
+    d.ctx.DATA = data(undefined, { answers: [ans("request-u-digest-useful", "digest-useful", "2026-01-15T10:00"),
+      ans("request-i-digest-interesting", "digest-interesting", "2026-01-15T09:00")], requests: [] });
+    d.run("board = normalize(DATA);");
+    const before = navClass(d, "digest");
+    d.run("state.view = 'digest'; state.dgTab = 'useful'; renderDigest();");
+    const after = navClass(d, "digest");
+    check("W22 the digest marks are looked up per kind: opening «Полезное» puts the mark out when «Интересное» was opened",
+      before.indexOf("hq-new") >= 0 && after.indexOf("hq-new") < 0, JSON.stringify({ before, after }));
+  }
+  // XCP-27: the update's refusals are shown in the window's language and name the files in the way; an unknown code
+  // shows the program's text as it is, with no file list.
+  {
+    const got = ["en", "he"].map((lang) => page({ settings: { lang } }, true).run('typeof updRefusal !== "function" ? "null" : JSON.stringify([' +
+      'updRefusal({ ok: false, code: "incoming-over-files", error: "обновление …", files: ["notes", "<b>x</b>"] }),' +
+      'updRefusal({ ok: false, code: "local-changes", error: "в файлах …", files: ["app.py"] }),' +
+      'updRefusal({ ok: false, code: "constructor", error: "git: boom", files: ["x"] }), updRefusal({ ok: false })])'));
+    const parsed = got.map((s) => JSON.parse(s));
+    const ok = parsed.every((r) => r && !/[а-яё]/i.test(r[0].msg + r[1].msg + r[3].msg) && r[0].msg && r[1].msg
+      && JSON.stringify(r[0].files) === JSON.stringify(["notes", "<b>x</b>"]) && JSON.stringify(r[1].files) === JSON.stringify(["app.py"])
+      && r[2].msg === "git: boom" && r[2].files.length === 0 && r[3].files.length === 0);
+    check("W23 update refusals translated (en, he), files named; an unknown code shown as is", ok, JSON.stringify(parsed));
+  }
+
   console.log("\nPassed " + PASSED.length + ", failed " + FAILED.length + (FAILED.length ? ": " + FAILED.join(", ") : ""));
   return FAILED.length ? 1 : 0;
 }

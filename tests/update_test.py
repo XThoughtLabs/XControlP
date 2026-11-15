@@ -53,7 +53,7 @@ def world(base, name, branch="modules"):
     sh(base, "init", "-q", "--bare", "-b", branch, str(remote))
     sh(base, "clone", "-q", str(remote), str(writer))
     sh(writer, "checkout", "-q", "-b", branch)
-    (writer / ".gitignore").write_text("data.js\nsettings.json\n", encoding="utf-8")
+    (writer / ".gitignore").write_text("data.js\nsettings.json\nreports/\nnotes\nlinks\n*.dat\n", encoding="utf-8")
     sh(writer, "add", ".gitignore")
     commit(writer, "app.py", "v1\n")
     sh(writer, "push", "-q", "origin", branch)
@@ -61,6 +61,25 @@ def world(base, name, branch="modules"):
     (program / "data.js").write_text("my data\n", encoding="utf-8")          # data: ignored by git
     (program / "settings.json").write_text('{"updates": "on"}\n', encoding="utf-8")
     return remote, writer, program
+
+
+def force(writer, rel, text, message, branch="modules"):
+    """The source commits a file at a path that is ignored in the program's folder (git add -f) and publishes it."""
+    path = writer / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    sh(writer, "add", "-f", "--", rel)
+    sh(writer, "commit", "-q", "-m", message)
+    sh(writer, "push", "-q", "origin", branch)
+
+
+def link(target, path):
+    """A symbolic link, or False where the system does not allow it (Windows without the right)."""
+    try:
+        os.symlink(str(target), str(path))
+        return True
+    except (OSError, NotImplementedError):
+        return False
 
 
 def publish(writer, name, text, branch="modules"):
@@ -99,6 +118,8 @@ def main():
         check("U3 local change to a tracked file: refused, file and HEAD kept",
               not r["ok"] and "правки" in r["error"] and (program / "app.py").read_text(encoding="utf-8") == "my edit\n"
               and sh(program, "rev-parse", "HEAD") == head_before, repr(r))
+        check("U3b the refusal has its code and names the changed file whole",
+              r.get("code") == "local-changes" and r.get("files") == ["app.py"], repr(r))
         sh(program, "checkout", "-q", "--", "app.py")
 
         # U4: the update: a fast-forward to the source; data files (ignored) untouched; restart asked.
@@ -193,6 +214,133 @@ def main():
         r = up.apply(program)
         check("U15 the update would overwrite an ignored data file: refused, named, file and HEAD kept",
               not r["ok"] and "data.js" in r.get("files", []) and sh(program, "rev-parse", "HEAD") == head
+              and (program / "data.js").read_text(encoding="utf-8") == "my data\n", repr(r))
+
+        # XCP-27: the user's own files that the update would replace are found whatever the shape of the change
+        # (each check also asks incoming_over_files directly, so git's own refusal cannot hide a gap in it).
+        def refused(r, program, name):
+            return (not r["ok"] and r.get("code") == "incoming-over-files" and name in r.get("files", [])
+                    and r["updates"]["state"] == "available")
+
+        # U26: the program's own list refuses before git is asked to merge (git's refusal is only the second guard).
+        remote, writer, program = world(base, "u26")
+        force(writer, "data.js", "example\n", "an example data file")
+        calls = []
+        real_run = up.subprocess.run
+        up.subprocess.run = lambda *a, **k: calls.append(list(a[0])) or real_run(*a, **k)
+        try:
+            r = up.apply(program)
+        finally:
+            up.subprocess.run = real_run
+        check("U26 the refusal comes from the program's own list: no merge is run", refused(r, program, "data.js")
+              and calls and not any("merge" in c for c in calls), repr((r, [c[3:5] for c in calls])))
+
+        # U18: the source renames a program file into the path of the user's ignored data file.
+        remote, writer, program = world(base, "u18")
+        publish(writer, "tmpl.txt", "template\n")
+        sh(program, "pull", "-q", "--ff-only")
+        sh(writer, "mv", "-f", "tmpl.txt", "data.js")
+        sh(writer, "commit", "-q", "-m", "rename into data.js")
+        sh(writer, "push", "-q", "origin", "modules")
+        up.check(program)
+        named = up.incoming_over_files(program, "origin/modules")
+        r = up.apply(program)
+        check("U18 a rename into an ignored data path: found, refused, file kept", named == ["data.js"] and refused(r, program, "data.js")
+              and (program / "data.js").read_text(encoding="utf-8") == "my data\n", repr((named, r)))
+
+        # U19: the source adds a file inside the user's ignored folder (reports/ is ignored, reports/r.md is the user's).
+        remote, writer, program = world(base, "u19")
+        (program / "reports").mkdir()
+        (program / "reports" / "r.md").write_text("my report\n", encoding="utf-8")
+        force(writer, "reports/r.md", "example report\n", "an example report")
+        up.check(program)
+        named = up.incoming_over_files(program, "origin/modules")
+        r = up.apply(program)
+        check("U19 a file inside an ignored folder: found, refused, file kept", named == ["reports/r.md"] and refused(r, program, "reports/r.md")
+              and (program / "reports" / "r.md").read_text(encoding="utf-8") == "my report\n", repr((named, r)))
+
+        # U20: the user's ignored link that points nowhere sits at the path the source adds.
+        remote, writer, program = world(base, "u20")
+        if not link(base / "nowhere-target", program / "links"):
+            print("skip U20 dangling link (this system does not allow symbolic links here)")
+        else:
+            force(writer, "links", "a file\n", "a file named links")
+            up.check(program)
+            named = up.incoming_over_files(program, "origin/modules")
+            r = up.apply(program)
+            check("U20 a dangling ignored link at an incoming path: found, refused, link kept", named == ["links"]
+                  and refused(r, program, "links") and os.path.islink(program / "links"), repr((named, r)))
+
+        # U21 (G1): the source adds notes/readme.md where «notes» is the user's ignored FILE: git would delete the file
+        # and make a folder.
+        remote, writer, program = world(base, "u21")
+        (program / "notes").write_text("my notes\n", encoding="utf-8")
+        force(writer, "notes/readme.md", "readme\n", "a notes folder")
+        head = sh(program, "rev-parse", "HEAD")
+        up.check(program)
+        named = up.incoming_over_files(program, "origin/modules")
+        r = up.apply(program)
+        check("U21 a folder over the user's ignored file: found, refused, file and HEAD kept", named == ["notes"]
+              and refused(r, program, "notes") and (program / "notes").read_text(encoding="utf-8") == "my notes\n"
+              and sh(program, "rev-parse", "HEAD") == head, repr((named, r)))
+
+        # U23: if the program's own list misses such a file, git itself refuses (--no-overwrite-ignore) and names it;
+        # the state stays «available», nothing is replaced.
+        real_over = up.incoming_over_files
+        up.incoming_over_files = lambda root, ref: []
+        try:
+            r = up.apply(program)
+        finally:
+            up.incoming_over_files = real_over
+        check("U23 git's own refusal (--no-overwrite-ignore): refused, named, file and HEAD kept", refused(r, program, "notes")
+              and (program / "notes").read_text(encoding="utf-8") == "my notes\n" and sh(program, "rev-parse", "HEAD") == head, repr(r))
+
+        # U22 (G1): the user's ignored link «links» points to a folder elsewhere; the source adds links/new.md.
+        remote, writer, program = world(base, "u22")
+        outside = base / "u22-outside"
+        outside.mkdir()
+        if not link(outside, program / "links"):
+            print("skip U22 linked folder (this system does not allow symbolic links here)")
+        else:
+            force(writer, "links/new.md", "new\n", "a links folder")
+            up.check(program)
+            named = up.incoming_over_files(program, "origin/modules")
+            r = up.apply(program)
+            check("U22 a folder over the user's ignored link: found, refused, link kept", named == ["links"]
+                  and refused(r, program, "links") and os.path.islink(program / "links"), repr((named, r)))
+
+        # U24 (G2): names are read as they are on disk: a leading space is kept; a name that is not UTF-8 is found
+        # (POSIX systems other than macOS only: Windows and macOS cannot hold such a name).
+        remote, writer, program = world(base, "u24")
+        (program / " my.dat").write_text("mine\n", encoding="utf-8")
+        odd = os.fsdecode(b"d\xe9.dat") if os.name != "nt" and sys.platform != "darwin" else None
+        if odd:
+            (program / odd).write_text("mine too\n", encoding="utf-8")
+            force(writer, odd, "{}\n", "an odd name")
+        else:
+            print("skip U24 part: a name that is not UTF-8 (this system cannot hold one)")
+        force(writer, " my.dat", "{}\n", "a name with a leading space")
+        up.check(program)
+        named = up.incoming_over_files(program, "origin/modules")
+        r = up.apply(program)
+        want = sorted([" my.dat"] + ([odd] if odd else []))
+        check("U24 a leading space and a name that is not UTF-8: found, refused, files kept", sorted(named) == want
+              and refused(r, program, " my.dat") and (not odd or "d\ufffd.dat" in r.get("files", []))
+              and (program / " my.dat").read_text(encoding="utf-8") == "mine\n", repr((named, r)))
+
+        # U25: a file of the program that the source turns into a folder is not the user's file: the update runs.
+        remote, writer, program = world(base, "u25")
+        publish(writer, "tool", "one file\n")
+        sh(program, "pull", "-q", "--ff-only")
+        sh(writer, "rm", "-q", "tool")
+        (writer / "tool").mkdir()
+        (writer / "tool" / "main.py").write_text("now a folder\n", encoding="utf-8")
+        sh(writer, "add", "tool/main.py")
+        sh(writer, "commit", "-q", "-m", "tool becomes a folder")
+        sh(writer, "push", "-q", "origin", "modules")
+        r = up.apply(program)
+        check("U25 a program file that becomes a folder: not refused, the update runs", r["ok"]
+              and (program / "tool" / "main.py").read_text(encoding="utf-8") == "now a folder\n"
               and (program / "data.js").read_text(encoding="utf-8") == "my data\n", repr(r))
 
         # U17: an option-like branch name never reaches git fetch: the check refuses to run.

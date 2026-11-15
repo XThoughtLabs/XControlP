@@ -6,7 +6,10 @@ When it is on, the check runs in the background at start and at «Синхрон
 git fetch of the branch the program's folder follows (a fork: the remote «upstream», if there is one),
 then a count of the commits on each side. Updating runs only on the user's click, only as a
 fast-forward, only when no tracked file of the program has local changes. Data files are not tracked
-by git, so updating never touches them. After an update the program asks to be restarted."""
+by git (most are ignored), but a fast-forward would still replace an ignored file when the update brings
+a file at its path or a folder in its place. So the update first lists such files of the user's and
+refuses, naming them; and the merge itself runs with --no-overwrite-ignore, so git refuses as well.
+After an update the program asks to be restarted."""
 import datetime
 import os
 import re
@@ -27,7 +30,11 @@ _STAMP = [0]                      # grows on every change of the state: data.js 
 
 
 class UpdateError(Exception):
-    """A git command failed or did not answer; the text is shown in the window."""
+    """A git command failed or did not answer; the text is shown in the window. lines: git's whole message."""
+
+    def __init__(self, text, lines=()):
+        super().__init__(text)
+        self.lines = list(lines)
 
 
 def git_exe():
@@ -35,7 +42,13 @@ def git_exe():
 
 
 def git(root, *args, timeout=LOCAL_TIMEOUT):
-    """One git command in the program's folder. Never asks for a password, never opens a window."""
+    """One git command in the program's folder, its output as text (trimmed)."""
+    return git_raw(root, *args, timeout=timeout).decode("utf-8", "replace").strip()
+
+
+def git_raw(root, *args, timeout=LOCAL_TIMEOUT):
+    """One git command in the program's folder, its output as bytes, untouched (file names stay exactly as on
+    disk: no trimmed spaces, no replaced bytes). Never asks for a password, never opens a window."""
     exe = git_exe()
     if not exe:
         raise UpdateError("git не найден")
@@ -51,8 +64,8 @@ def git(root, *args, timeout=LOCAL_TIMEOUT):
         raise UpdateError(f"git не запустился: {exc}")
     if done.returncode != 0:
         text = (done.stderr or done.stdout or b"").decode("utf-8", "replace").strip().splitlines()
-        raise UpdateError(text[-1] if text else "git: код " + str(done.returncode))
-    return done.stdout.decode("utf-8", "replace").strip()
+        raise UpdateError(text[-1] if text else "git: код " + str(done.returncode), text)
+    return done.stdout
 
 
 def now_text():
@@ -94,16 +107,53 @@ def compare(root, ref):
     return int(ahead), int(behind)
 
 
+def names(raw):
+    """A -z list from git as file names: split on NUL only, each name decoded as the file system does."""
+    return [os.fsdecode(b) for b in raw.split(b"\0") if b]
+
+
+def shown(name):
+    """A file name for the window: bytes that are not UTF-8 are shown as �."""
+    return os.fsencode(name).decode("utf-8", "replace")
+
+
 def incoming_over_files(root, ref):
-    """Paths the update would add (new or renamed into) that already exist in the folder, untracked —
-    the user's own files (data). git would overwrite such a file silently, so the update must not run."""
-    added = git(root, "diff", "--name-only", "-z", "--no-renames", "--diff-filter=A", "HEAD", ref).split("\0")
-    return [p for p in added if p and (os.path.lexists(root / p))]
+    """The user's own files (untracked: data) that the update would replace: a path it adds (new or renamed
+    into) that already exists here, and any leading part of an added path that is here a file or a link,
+    not a real folder, and not a file of the program (git would put the new folder in its place).
+    git would do both silently, so the update must not run."""
+    added = names(git_raw(root, "diff", "--name-only", "-z", "--no-renames", "--diff-filter=A", "HEAD", ref))
+    tracked = set(names(git_raw(root, "ls-files", "-z")))
+    over = []
+    for p in added:
+        parts = p.split("/")
+        for i in range(1, len(parts)):
+            q = "/".join(parts[:i])
+            full = root / q
+            if q not in tracked and (os.path.islink(full) or (os.path.lexists(full) and not os.path.isdir(full))):
+                over.append(q)
+                break
+        else:
+            if os.path.lexists(root / p):
+                over.append(p)
+    return list(dict.fromkeys(over))
 
 
 def local_changes(root):
-    """Tracked files of the program changed here (untracked and ignored files — data — do not count)."""
-    return git(root, "status", "--porcelain", "--untracked-files=no")
+    """Tracked files of the program changed here, as names (untracked and ignored files — data — do not count)."""
+    raw, found, i = git_raw(root, "status", "--porcelain", "-z", "--untracked-files=no").split(b"\0"), [], 0
+    while i < len(raw):
+        entry, i = raw[i], i + 1
+        if len(entry) > 3:
+            found.append(os.fsdecode(entry[3:]))
+            if entry[:1] in (b"R", b"C") or entry[1:2] in (b"R", b"C"):
+                i += 1                      # a rename or a copy: its old name follows
+    return found
+
+
+def blocked_by_git(lines):
+    """The files git names when it refuses a merge (each on its own line, after a tab)."""
+    return [line[1:] for line in lines if line.startswith("\t") and line[1:].strip()]
 
 
 def set_state(**values):
@@ -142,18 +192,27 @@ def apply(root=None):
     if result["state"] != "available":
         return {"ok": False, "error": "обновлять нечего" if result["state"] == "current" else
                 "обновление невозможно: " + (result["error"] or result["state"]), "updates": result}
+    over_text = "обновление принесло бы файлы на место ваших файлов, они были бы потеряны — обновление не запускалось"
     with _LOCK:
         try:
             changed = local_changes(root)
             if changed:
-                return {"ok": False, "error": "в файлах программы есть свои правки — обновление не запускалось",
-                        "files": changed.splitlines()[:20], "updates": dict(_STATE)}
+                return {"ok": False, "code": "local-changes", "error": "в файлах программы есть свои правки — обновление не запускалось",
+                        "files": [shown(n) for n in changed[:20]], "updates": dict(_STATE)}
             over = incoming_over_files(root, _STATE["source"])
             if over:
-                return {"ok": False, "error": "обновление принесёт файлы с путями ваших файлов, они были бы перезаписаны — обновление не запускалось",
-                        "files": over[:20], "updates": dict(_STATE)}
+                return {"ok": False, "code": "incoming-over-files", "error": over_text,
+                        "files": [shown(n) for n in over[:20]], "updates": dict(_STATE)}
             before = git(root, "rev-parse", "HEAD")
-            git(root, "merge", "--ff-only", "--quiet", _STATE["source"], timeout=FETCH_TIMEOUT)
+            try:
+                # --no-overwrite-ignore: if a file of the user's is still in the way, git refuses instead of replacing it
+                git(root, "merge", "--ff-only", "--no-overwrite-ignore", "--quiet", _STATE["source"], timeout=FETCH_TIMEOUT)
+            except UpdateError as exc:
+                blocked = blocked_by_git(exc.lines)
+                if not blocked:
+                    raise
+                return {"ok": False, "code": "incoming-over-files", "error": over_text, "files": blocked[:20],
+                        "updates": dict(_STATE)}
             after = git(root, "rev-parse", "HEAD")
         except UpdateError as exc:
             set_state(state="error", error=str(exc), checked=now_text())

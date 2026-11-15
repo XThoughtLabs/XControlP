@@ -102,6 +102,14 @@ def main():
               s1["ok"] and s2["ok"] and settings.read_settings()["ui"]["seen"] == {"summary": "request-a-summary", "proposals": "request-b-proposals"}
               and not any(r["ok"] for r in bad) and not other["ok"], repr(bad))
 
+        # V4b: each digest tab is remembered by its own kind and survives a restart (read back from settings.json).
+        s3 = settings.save_ui(q(op="seen", section="digest-interesting", id="request-i-digest-interesting"))
+        s4 = settings.save_ui(q(op="seen", section="digest-useful", id="request-u-digest-useful"))
+        kept = settings.read_settings()["ui"]["seen"]
+        check("V4b the digest tabs remembered per kind after a restart",
+              s3["ok"] and s4["ok"] and kept == {"summary": "request-a-summary", "proposals": "request-b-proposals",
+                                                 "digest-interesting": "request-i-digest-interesting", "digest-useful": "request-u-digest-useful"}, repr(kept))
+
         # V5: another setting (the language, the overview card switch) keeps the window's memory.
         settings.save_settings(q(lang="en"))
         settings.save_settings(q(summary_card="off"))

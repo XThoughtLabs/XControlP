@@ -8,7 +8,7 @@
   const SET_ACCENTS = [["orange", "Оранжевый", "#f28a1e"], ["blue", "Синий", "#4c8df6"], ["violet", "Фиолетовый", "#9d80f2"], ["teal", "Бирюзовый", "#19b5a3"]];
   const uiZoom = () => parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
   const SET_PREVIEW = [["obzor", "▦"], ["calendar", "▤"], ["review", "▥"], ["ideas", "✦"]];
-  let setMsg = "", setOk = "", setBusy = false, setTab = "interface";
+  let setMsg = "", setFiles = [], setOk = "", setBusy = false, setTab = "interface";
   const setPick = (o) => o && typeof o === "object" ? String(o[LANG] || o.ru || o.en || "") : String(o || "");
   const iconStyles = () => (window.BOARD && Array.isArray(window.BOARD.icon_styles) ? window.BOARD.icon_styles : [])
     .filter((st) => st && typeof st.id === "string" && /^[a-z0-9][a-z0-9-]{0,29}$/.test(st.id) && st.id !== "base");
@@ -48,7 +48,8 @@
     setPanel.innerHTML = '<div class="dw"><div class="dw-head"><h2 id="set-title">☰ ' + esc(tl("Настройки")) + '</h2>' +
       '<button type="button" class="dw-close" data-set="close" aria-label="' + esc(tl("Закрыть")) + '">✕</button>' +
       '<div class="set-tabs" role="tablist">' + tabBtn("interface", "Интерфейс") + tabBtn("langs", "Языки") + tabBtn("updates", "Обновления") + '</div></div>' +
-      '<div class="dw-body">' + (setMsg ? '<p class="set-msg" role="alert">' + esc(setMsg) + '</p>' : "") + (setOk ? '<p class="set-ok" role="status">' + esc(setOk) + '</p>' : "") +
+      '<div class="dw-body">' + (setMsg ? '<p class="set-msg" role="alert">' + esc(setMsg) + (setFiles.length ? ":" : "") + '</p>' +
+      (setFiles.length ? '<ul class="set-files">' + setFiles.map((f) => '<li><code>' + esc(f) + '</code></li>').join("") + '</ul>' : "") : "") + (setOk ? '<p class="set-ok" role="status">' + esc(setOk) + '</p>' : "") +
       (setTab === "langs" ? langsBody : "") + (setTab === "updates" ? updBody(u, chip) : "") + (setTab !== "interface" ? "" : '' +
       '<section class="set-sec"><h3>' + esc(tl("Стили интерфейса")) + '</h3><div class="set-opts">' + styles + '</div>' +
         '<p class="set-note">' + esc(tl("Другие стили появятся позже")) + '</p></section>' +
@@ -81,8 +82,8 @@
       (on && st === "available" ? '<button type="button" class="svc-btn" data-upd="apply"' + (setBusy ? " disabled" : "") + '>' + esc(tl("Обновить программу")) + '</button>' : "") + '</div></section>';
   }
   async function updAction(kind) {
-    if (!token) { setMsg = tl("Кнопка работает, когда Пульт открыт ярлыком «XControlP» на рабочем столе."); renderSettings(); return; }
-    setMsg = ""; setOk = ""; setBusy = true; renderSettings();
+    if (!token) { setFiles = []; setMsg = tl("Кнопка работает, когда Пульт открыт ярлыком «XControlP» на рабочем столе."); renderSettings(); return; }
+    setFiles = []; setMsg = ""; setOk = ""; setBusy = true; renderSettings();
     let res = {};
     try {
       const r = await fetch("/update/" + (kind === "apply" ? "apply" : "check"), { method: "POST", headers: { "X-Pult-Token": token } });
@@ -91,12 +92,12 @@
     setBusy = false;
     if (res.updates && window.BOARD) window.BOARD.updates = res.updates;
     if (kind === "apply" && res.ok) setOk = tl("Обновлено") + ": " + (res.before || "") + " → " + (res.after || "");
-    else if (!res.ok) setMsg = res.error || tl("Проверка не удалась");
+    else if (!res.ok) { const why = updRefusal(res); setMsg = why.msg; setFiles = why.files; }
     renderSettings(); refresh();
   }
   function openSettings() {
     if (!setPanel) return;
-    setMsg = ""; setOk = "";
+    setFiles = []; setMsg = ""; setOk = "";
     renderSettings();
     if (!setPanel.open) setPanel.showModal();
     const close = setPanel.querySelector(".dw-close");
@@ -105,7 +106,7 @@
   async function saveSettings(changes) {
     const cur = Object.assign(uiSettings(), { icons: iconStyle() }), diff = {};
     Object.keys(changes).forEach((k) => { if (SET_DEFAULT.hasOwnProperty(k) && cur[k] !== changes[k]) diff[k] = changes[k]; });
-    setMsg = ""; setOk = "";
+    setFiles = []; setMsg = ""; setOk = "";
     if (!Object.keys(diff).length) { renderSettings(); return true; }
     if (!token) { setMsg = tl("Настройка не сохранилась"); renderSettings(); return false; }
     setBusy = true; renderSettings();
@@ -126,7 +127,7 @@
     const [cmd, arg] = String(v || "").split(":");
     const tabOf = (a) => a === "langs" || a === "updates" ? a : "interface";
     if (cmd === "open") { setTab = tabOf(arg); openSettings(); }
-    else if (cmd === "tab") { setTab = tabOf(arg); setMsg = ""; setOk = ""; renderSettings(); }
+    else if (cmd === "tab") { setTab = tabOf(arg); setFiles = []; setMsg = ""; setOk = ""; renderSettings(); }
     else if (cmd === "close") { if (setPanel && setPanel.open) setPanel.close(); }
     else if (cmd === "reset") { if (await saveSettings({ icons: "base", theme: "dark", scale: "100", accent: "orange" })) { setOk = tl("Базовые настройки возвращены"); renderSettings(); } }
     else if (cmd === "icons" || cmd === "theme" || cmd === "scale" || cmd === "accent" || cmd === "updates" || cmd === "summary_card") saveSettings({ [cmd]: arg });
