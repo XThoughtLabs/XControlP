@@ -8,7 +8,9 @@ then a count of the commits on each side. Updating runs only on the user's click
 fast-forward, only when no tracked file of the program has local changes. Data files are not tracked
 by git (most are ignored), but a fast-forward would still replace an ignored file when the update brings
 a file at its path or a folder in its place. So the update first lists such files of the user's and
-refuses, naming them; and the merge itself runs with --no-overwrite-ignore, so git refuses as well.
+refuses, naming them; and the merge itself runs with --no-overwrite-ignore, so git refuses as well (its refusal
+is read by the kind of message: the user's untracked files in the way, or a local edit of a program file).
+Every answer of the two buttons carries a code, so the window can show it in its own language.
 After an update the program asks to be restarted."""
 import datetime
 import os
@@ -134,9 +136,23 @@ def incoming_over_files(root, ref):
                 over.append(q)
                 break
         else:
-            if os.path.lexists(root / p):
+            full = root / p
+            if os.path.islink(full) or (os.path.lexists(full) and not os.path.isdir(full)):
+                over.append(p)
+            elif os.path.isdir(full) and untracked_inside(root, p, tracked):
                 over.append(p)
     return list(dict.fromkeys(over))
+
+
+def untracked_inside(root, folder, tracked):
+    """Does a real folder of the program hold anything the program does not track (a file or a link of the user's)?
+    Links inside are not followed. A folder holding only program files is the program's: the update may replace it."""
+    for top, dirs, files in os.walk(root / folder):
+        rel = os.path.relpath(top, root).replace(os.sep, "/")
+        for name in files + [d for d in dirs if os.path.islink(os.path.join(top, d))]:
+            if rel + "/" + name not in tracked:
+                return True
+    return False
 
 
 def local_changes(root):
@@ -151,9 +167,25 @@ def local_changes(root):
     return found
 
 
+# git (LC_ALL=C) names the files of a refused merge on tab-indented lines under a heading; only these headings
+# mean an untracked file of the user's is in the way, and this one means a local edit of a program file.
+UNTRACKED_HEADINGS = ("untracked working tree files would be overwritten by merge:",
+                      "untracked working tree files would be removed by merge:",
+                      "Updating the following directories would lose untracked files in them:")
+LOCAL_HEADING = "Your local changes to the following files would be overwritten by merge:"
+
+
 def blocked_by_git(lines):
-    """The files git names when it refuses a merge (each on its own line, after a tab)."""
-    return [line[1:] for line in lines if line.startswith("\t") and line[1:].strip()]
+    """The files git names when it refuses a merge, by kind: (the user's untracked files in the way, program files
+    with local edits). The tab-indented lines of any other message belong to neither."""
+    over, local, into = [], [], None
+    for line in lines:
+        if line.startswith("\t"):
+            if into is not None and line[1:].strip():
+                into.append(line[1:])
+        else:
+            into = over if any(h in line for h in UNTRACKED_HEADINGS) else local if LOCAL_HEADING in line else None
+    return over, local
 
 
 def set_state(**values):
@@ -190,14 +222,16 @@ def apply(root=None):
     root = root or HERE
     result = check(root)
     if result["state"] != "available":
-        return {"ok": False, "error": "обновлять нечего" if result["state"] == "current" else
+        return {"ok": False, "code": "state", "state": result["state"], "detail": result["error"],
+                "error": "обновлять нечего" if result["state"] == "current" else
                 "обновление невозможно: " + (result["error"] or result["state"]), "updates": result}
     over_text = "обновление принесло бы файлы на место ваших файлов, они были бы потеряны — обновление не запускалось"
+    local_text = "в файлах программы есть свои правки — обновление не запускалось"
     with _LOCK:
         try:
             changed = local_changes(root)
             if changed:
-                return {"ok": False, "code": "local-changes", "error": "в файлах программы есть свои правки — обновление не запускалось",
+                return {"ok": False, "code": "local-changes", "error": local_text,
                         "files": [shown(n) for n in changed[:20]], "updates": dict(_STATE)}
             over = incoming_over_files(root, _STATE["source"])
             if over:
@@ -208,7 +242,10 @@ def apply(root=None):
                 # --no-overwrite-ignore: if a file of the user's is still in the way, git refuses instead of replacing it
                 git(root, "merge", "--ff-only", "--no-overwrite-ignore", "--quiet", _STATE["source"], timeout=FETCH_TIMEOUT)
             except UpdateError as exc:
-                blocked = blocked_by_git(exc.lines)
+                blocked, edited = blocked_by_git(exc.lines)
+                if edited:      # a local edit git sees and `git status` did not show (skip-worktree, or an edit just now)
+                    return {"ok": False, "code": "local-changes", "error": local_text, "files": edited[:20],
+                            "updates": dict(_STATE)}
                 if not blocked:
                     raise
                 return {"ok": False, "code": "incoming-over-files", "error": over_text, "files": blocked[:20],
@@ -216,7 +253,7 @@ def apply(root=None):
             after = git(root, "rev-parse", "HEAD")
         except UpdateError as exc:
             set_state(state="error", error=str(exc), checked=now_text())
-            return {"ok": False, "error": str(exc), "updates": dict(_STATE)}
+            return {"ok": False, "code": "update-failed", "detail": str(exc), "error": str(exc), "updates": dict(_STATE)}
         set_state(state="updated", behind=0, ahead=0, error="", checked=now_text(), restart=True)
         return {"ok": True, "before": before[:7], "after": after[:7], "restart": True, "updates": dict(_STATE)}
 
@@ -255,18 +292,20 @@ def check_in_background():
 def update_check_now():
     """POST /update/check: the button «Проверить сейчас» (works only with the setting on)."""
     if not enabled():
-        return {"ok": False, "error": "проверка обновлений выключена в настройках"}
+        return {"ok": False, "code": "state", "state": "off", "error": "проверка обновлений выключена в настройках"}
     result = check()
     with SYNC_LOCK:
         build()
         LAST_STAMPS[0] = stamps()
-    return {"ok": result["state"] not in ("error", "unavailable"), "updates": view(), "error": result["error"]}
+    ok = result["state"] not in ("error", "unavailable")
+    return dict({"ok": ok, "updates": view(), "error": result["error"]},
+                **({} if ok else {"code": "state", "state": result["state"], "detail": result["error"]}))
 
 
 def update_apply():
     """POST /update/apply: the button «Обновить»."""
     if not enabled():
-        return {"ok": False, "error": "проверка обновлений выключена в настройках"}
+        return {"ok": False, "code": "state", "state": "off", "error": "проверка обновлений выключена в настройках"}
     result = apply()
     with SYNC_LOCK:
         build()

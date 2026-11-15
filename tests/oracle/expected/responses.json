@@ -27,10 +27,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 135934,
+  "bytes": 136072,
   "method": "GET",
   "path": "/i18n.js",
-  "sha256": "4d1ee202a5e28135e0c82e3c86bd608414609f38f5429bf1da07161c2659f4aa",
+  "sha256": "caa2124c0d0ce8b8fdce0bf8a67209cb343309eccdae9bbe10e12b956007497f",
   "status": 200,
   "step": "G04",
   "type": "text/javascript; charset=utf-8"
@@ -160,10 +160,10 @@
   "type": "text/css; charset=utf-8"
  },
  {
-  "bytes": 56011,
+  "bytes": 57469,
   "method": "GET",
   "path": "/js/01-core.js",
-  "sha256": "8ae05ab6bda85835db166c3090d899c1574b9a573a61cfbdb5a5eacec33bbab5",
+  "sha256": "c7641c3c18b82b312de24ab503ee0d6b1ff52738b7d337b082414da1b647c63e",
   "status": 200,
   "step": "G19",
   "type": "text/javascript; charset=utf-8"
@@ -241,10 +241,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 37475,
+  "bytes": 36639,
   "method": "GET",
   "path": "/js/10-settings.js",
-  "sha256": "f17711a7cd1ad5e683f1223823ebaba7d99149a0b3f2914ef6f6b7f249682a8b",
+  "sha256": "b775bfddbe2111f4fb0597510f1940d61be264a30af140c805675fc45c8c5363",
   "status": 200,
   "step": "G28",
   "type": "text/javascript; charset=utf-8"

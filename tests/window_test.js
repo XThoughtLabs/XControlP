@@ -384,12 +384,54 @@ function main() {
     const got = ["en", "he"].map((lang) => page({ settings: { lang } }, true).run('typeof updRefusal !== "function" ? "null" : JSON.stringify([' +
       'updRefusal({ ok: false, code: "incoming-over-files", error: "обновление …", files: ["notes", "<b>x</b>"] }),' +
       'updRefusal({ ok: false, code: "local-changes", error: "в файлах …", files: ["app.py"] }),' +
-      'updRefusal({ ok: false, code: "constructor", error: "git: boom", files: ["x"] }), updRefusal({ ok: false })])'));
+      'updRefusal({ ok: false, code: "constructor", error: "git: boom", files: ["x"] }), updRefusal({ ok: false }),' +
+      'updRefusal({ ok: false, code: "state", state: "current" }), updRefusal({ ok: false, code: "state", state: "unavailable", detail: "git не найден" }),' +
+      'updRefusal({ ok: false, code: "state", state: "off" }), updRefusal({ ok: false, code: "update-failed", detail: "fatal: x" }),' +
+      'updRefusal({ ok: false, code: "state", state: "constructor", error: "raw" })])'));
     const parsed = got.map((s) => JSON.parse(s));
     const ok = parsed.every((r) => r && !/[а-яё]/i.test(r[0].msg + r[1].msg + r[3].msg) && r[0].msg && r[1].msg
       && JSON.stringify(r[0].files) === JSON.stringify(["notes", "<b>x</b>"]) && JSON.stringify(r[1].files) === JSON.stringify(["app.py"])
-      && r[2].msg === "git: boom" && r[2].files.length === 0 && r[3].files.length === 0);
-    check("W23 update refusals translated (en, he), files named; an unknown code shown as is", ok, JSON.stringify(parsed));
+      && r[2].msg === "git: boom" && r[2].files.length === 0 && r[3].files.length === 0
+      && !/[а-яё]/i.test(r[4].msg + r[6].msg) && r[4].msg && r[6].msg && r[5].msg.endsWith(": git не найден") && !/[а-яё]/i.test(r[5].msg.replace(": git не найден", ""))
+      && r[7].msg.endsWith(": fatal: x") && !/[а-яё]/i.test(r[7].msg) && r[8].msg === "raw");
+    check("W23 update answers translated (en, he), files named, git's text kept as data; an unknown code shown as is", ok, JSON.stringify(parsed));
+  }
+
+  // XCP-28: the menu read as the program draws it (no extra redraw by the check); opening one section puts out only its
+  // own mark (an unopened summary keeps its mark) and posts once; a newer answer after an opened one lights the mark again.
+  const navNow = (p, key) => { const m = p.els.nav.innerHTML.match(new RegExp('data-view="' + key + '" class="([^"]*)"')); return m ? m[1] : null; };
+  {
+    const posts = [];
+    const fetchStub = (url) => { posts.push(url); return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }); };
+    const p = hqPage([ans("request-p-proposals", "proposals", "2026-01-15T09:00"), ans("request-s-summary", "summary", "2026-01-15T08:00")], []);
+    Object.assign(p.ctx, { token: "t", fetch: fetchStub });
+    p.run("renderNav();");
+    const before = [navNow(p, "proposals"), navNow(p, "summary")];
+    p.run("renderProposals();");
+    const after = [navNow(p, "proposals"), navNow(p, "summary")];
+    const d = page({ settings: { lang: "ru" }, digests, answers: [] });
+    Object.assign(d.ctx, { token: "t", fetch: fetchStub, stamp: (x) => String(x || ""), refresh() {}, showSync() {} });
+    d.ctx.DATA = data(undefined, { answers: [ans("request-u-digest-useful", "digest-useful", "2026-01-15T10:00"),
+      ans("request-s2-summary", "summary", "2026-01-15T08:00")], requests: [] });
+    d.run("board = normalize(DATA); renderNav(); state.view = 'digest'; state.dgTab = 'useful'; renderDigest();");
+    const dAfter = [navNow(d, "digest"), navNow(d, "summary")];
+    check("W24 opening a section puts out only its own mark at once, an unopened summary keeps its mark, one POST each",
+      before[0].indexOf("hq-new") >= 0 && before[1].indexOf("hq-new") >= 0 && after[0].indexOf("hq-new") < 0 && after[1].indexOf("hq-new") >= 0
+      && dAfter[0].indexOf("hq-new") < 0 && dAfter[1].indexOf("hq-new") >= 0
+      && JSON.stringify(posts) === JSON.stringify(["/ui?op=seen&section=proposals&id=request-p-proposals", "/ui?op=seen&section=digest-useful&id=request-u-digest-useful"]),
+      JSON.stringify({ before, after, dAfter, posts }));
+  }
+  {
+    const posts = [];
+    const p = hqPage([ans("request-s2-summary", "summary", "2026-01-15T10:00"), ans("request-s1-summary", "summary", "2026-01-14T10:00")], [],
+      { ui: { collapsed: [], summary_hidden: "", seen: { summary: "request-s1-summary" } } });
+    Object.assign(p.ctx, { token: "t", fetch: (url) => { posts.push(url); return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }); } });
+    const before = navClass(p, "summary");
+    p.run("renderSummary();");
+    const after = navNow(p, "summary");
+    check("W25 a newer answer after an opened one lights the mark again; opening remembers the newer one",
+      before.indexOf("hq-new") >= 0 && after.indexOf("hq-new") < 0 && JSON.stringify(posts) === JSON.stringify(["/ui?op=seen&section=summary&id=request-s2-summary"]),
+      JSON.stringify({ before, after, posts }));
   }
 
   console.log("\nPassed " + PASSED.length + ", failed " + FAILED.length + (FAILED.length ? ": " + FAILED.join(", ") : ""));

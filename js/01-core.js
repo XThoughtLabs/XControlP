@@ -40,16 +40,25 @@
     if (LANG === "ru" || typeof s !== "string" || !CYR_RE.test(s)) return s;
     return /[<>]|="/.test(s) ? tparts(s, (x) => tx(x)) : tx(s);
   }
-  // Отказ кнопки «Обновить программу» (вкладка «Обновления», 10-settings.js): по коду — переведённый текст и файлы,
-  // которые мешают; без известного кода — текст программы как есть. Здесь, а не в 10-settings.js: его проверяет window_test.
+  // Ответы кнопок «Проверить сейчас» и «Обновить программу» (вкладка «Обновления», 10-settings.js): по коду — переведённый
+  // текст; файлы, которые мешают, — списком; текст git или проверки (detail) — как есть, после переведённого начала.
+  // Без известного кода — текст программы как есть. Здесь, а не в 10-settings.js: его проверяет window_test.
+  // UPD_TEXT — состояния проверки; им пользуется и строка «Состояние» во вкладке.
+  const UPD_TEXT = { off: "Проверка выключена: программа не обращается к GitHub за обновлениями.", checking: "Идёт проверка…",
+    current: "Установлена последняя версия.", available: "Есть обновление.", ahead: "В папке программы есть свои коммиты, которых нет на GitHub: обновление кнопкой невозможно.",
+    diverged: "Папка программы разошлась с GitHub (свои коммиты и новые коммиты там): обновление кнопкой невозможно.",
+    unavailable: "Проверка недоступна", error: "Проверка не удалась", updated: "Программа обновлена." };
   const UPD_REFUSAL = {
     "local-changes": "В файлах программы есть свои правки — обновление не запускалось. Файлы с правками",
-    "incoming-over-files": "Обновление принесло бы файлы на место ваших файлов, они были бы потеряны — обновление не запускалось. Перенесите эти файлы в другую папку и обновите снова" };
+    "incoming-over-files": "Обновление принесло бы файлы на место ваших файлов, они были бы потеряны — обновление не запускалось. Перенесите эти файлы в другую папку и обновите снова",
+    "update-failed": "Обновление не удалось" };
   function updRefusal(res) {
     const r = res && typeof res === "object" ? res : {};
-    const known = typeof r.code === "string" && Object.prototype.hasOwnProperty.call(UPD_REFUSAL, r.code);
-    return { msg: known ? tl(UPD_REFUSAL[r.code]) : String(r.error || tl("Проверка не удалась")),
-      files: known && Array.isArray(r.files) ? r.files.slice(0, 20).map(String) : [] };
+    const own = (o, k) => typeof k === "string" && Object.prototype.hasOwnProperty.call(o, k);
+    const detail = typeof r.detail === "string" && r.detail ? ": " + r.detail : "";
+    if (own(UPD_REFUSAL, r.code)) return { msg: tl(UPD_REFUSAL[r.code]) + detail, files: Array.isArray(r.files) ? r.files.slice(0, 20).map(String) : [] };
+    if (r.code === "state" && own(UPD_TEXT, r.state)) return { msg: tl(UPD_TEXT[r.state]) + detail, files: [] };
+    return { msg: String(r.error || tl("Проверка не удалась")), files: [] };
   }
 
   const STATUS = {

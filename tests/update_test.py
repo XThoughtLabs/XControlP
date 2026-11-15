@@ -343,6 +343,80 @@ def main():
               and (program / "tool" / "main.py").read_text(encoding="utf-8") == "now a folder\n"
               and (program / "data.js").read_text(encoding="utf-8") == "my data\n", repr(r))
 
+        # XCP-28: git's refusal is read by the kind of message; a program folder is the program's; every answer has a code.
+        # U27 (H1): a local edit git sees but `git status` hides (skip-worktree): git refuses with "Your local changes";
+        # that is the refusal «own edits in the program's files», never «your files are in the way».
+        remote, writer, program = world(base, "u27")
+        publish(writer, "app.py", "v2\n")
+        sh(program, "update-index", "--skip-worktree", "app.py")
+        (program / "app.py").write_text("my edit\n", encoding="utf-8")
+        head = sh(program, "rev-parse", "HEAD")
+        r = up.apply(program)
+        check("U27 a hidden local edit of a program file: refused as local changes, file and HEAD kept",
+              not r["ok"] and r.get("code") == "local-changes" and r.get("files") == ["app.py"] and r["updates"]["state"] == "available"
+              and (program / "app.py").read_text(encoding="utf-8") == "my edit\n" and sh(program, "rev-parse", "HEAD") == head, repr(r))
+
+        # U28 (H2): a program folder holding only program files, which the source turns into a file: the update runs;
+        # the same folder holding a user's ignored file: refused, the folder named, the file kept.
+        remote, writer, program = world(base, "u28")
+        (writer / "lib").mkdir()
+        publish(writer, "lib/a.py", "a\n")
+        sh(program, "pull", "-q", "--ff-only")
+        sh(writer, "rm", "-q", "-r", "lib")
+        publish(writer, "lib", "now a file\n")
+        r = up.apply(program)
+        check("U28 a program folder that becomes a file: not refused, the update runs", r["ok"]
+              and (program / "lib").read_text(encoding="utf-8") == "now a file\n", repr(r))
+        remote, writer, program = world(base, "u28b")
+        (writer / "lib").mkdir()
+        publish(writer, "lib/a.py", "a\n")
+        sh(program, "pull", "-q", "--ff-only")
+        (program / "lib" / "mine.dat").write_text("mine\n", encoding="utf-8")
+        sh(writer, "rm", "-q", "-r", "lib")
+        publish(writer, "lib", "now a file\n")
+        up.check(program)
+        named = up.incoming_over_files(program, "origin/modules")
+        r = up.apply(program)
+        check("U28b the same folder holding a user's ignored file: found, refused, folder named, file kept", named == ["lib"] and refused(r, program, "lib")
+              and (program / "lib" / "mine.dat").read_text(encoding="utf-8") == "mine\n", repr((named, r)))
+
+        # U3c (H3): the changed program files are named whole, also for a rename whose old name starts with R.
+        remote, writer, program = world(base, "u3c")
+        publish(writer, "README.md", "readme\n")
+        sh(program, "pull", "-q", "--ff-only")
+        publish(writer, "more.py", "x\n")
+        sh(program, "mv", "README.md", "docs.md")
+        (program / "app.py").write_text("my edit\n", encoding="utf-8")
+        r = up.apply(program)
+        check("U3c local changes with a rename: exactly the new name and the edited file", not r["ok"] and r.get("code") == "local-changes"
+              and sorted(r.get("files", [])) == ["app.py", "docs.md"], repr(r))
+
+        # U29 (H6): the button's other answers carry a code and the state: nothing to update, own commits only.
+        remote, writer, program = world(base, "u29")
+        current = up.apply(program)
+        commit(program, "local.py", "mine\n")
+        ahead = up.apply(program)
+        check("U29 nothing to update and own commits: refused with code «state» and the state", not current["ok"]
+              and current.get("code") == "state" and current.get("state") == "current" and not ahead["ok"]
+              and ahead.get("code") == "state" and ahead.get("state") == "ahead", repr((current, ahead)))
+
+        # U30 (H6): a merge that git refuses for another reason: code «update-failed», git's own line kept as data.
+        remote, writer, program = world(base, "u30")
+        publish(writer, "app.py", "v2\n")
+        real_git = up.git
+
+        def failing(root, *args, **kw):
+            if args and args[0] == "merge":
+                raise up.UpdateError("fatal: something else", ["fatal: something else"])
+            return real_git(root, *args, **kw)
+        up.git = failing
+        try:
+            r = up.apply(program)
+        finally:
+            up.git = real_git
+        check("U30 another refusal of the merge: code update-failed, git's line as detail, state error", not r["ok"]
+              and r.get("code") == "update-failed" and r.get("detail") == "fatal: something else" and r["updates"]["state"] == "error", repr(r))
+
         # U17: an option-like branch name never reaches git fetch: the check refuses to run.
         remote, writer, program = world(base, "u17")
         sh(program, "update-ref", "refs/heads/--upload-pack=touch", "HEAD")
@@ -378,7 +452,8 @@ def main():
             up.read_settings = real_settings
         check("U12 setting off: no git command, buttons refuse, the window sees off",
               not calls and started is False and not now["ok"] and not applied["ok"] and shown["enabled"] is False
-              and shown["state"] == "off" and "выключена" in now["error"] and "выключена" in applied["error"], repr((calls, shown, now, applied)))
+              and shown["state"] == "off" and "выключена" in now["error"] and "выключена" in applied["error"]
+              and now.get("code") == applied.get("code") == "state" and now.get("state") == applied.get("state") == "off", repr((calls, shown, now, applied)))
 
         # U13: a detached HEAD (not on a branch): unavailable.
         remote, writer, program = world(base, "u13")
