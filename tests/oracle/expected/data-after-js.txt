@@ -651,6 +651,6 @@ window.BOARD = {
   "version_new": "",
   "notes": [],
   "enabled": false,
-  "version_here": "1.0.01"
+  "version_here": "1.0.02"
  }
 };

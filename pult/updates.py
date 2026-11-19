@@ -13,10 +13,9 @@ is read by the kind of message: the user's untracked files in the way, or a loca
 Every answer of the two buttons carries a code, so the window can show it in its own language.
 After an update the program asks to be restarted.
 
-The version number and «what's new» come from one file, pult/release.json: the number of the copy that runs
-(read once, from disk) and, when the check finds new commits, the same file of the fetched update, read from the
-objects git has already fetched (no second network call). The window gets the new number and the notes of every
-release newer than the one here; without the file, or with a broken one, everything works as before, without notes."""
+The only release announcement is pult/release.json. Its fetched version must be newer and have release notes.
+The install target is the commit that published the file on the source branch, even if other commits follow it.
+The user's click approves the displayed target; if it changes, the window shows the new offer before installing."""
 import datetime
 import json
 import os
@@ -39,7 +38,7 @@ NOTE_MAX = 300           # characters per line of notes
 
 _LOCK = threading.Lock()          # one check or update at a time
 _STATE = {"state": "off", "behind": 0, "ahead": 0, "source": "", "error": "", "checked": "", "restart": False, "version": 0,
-          "version_new": "", "notes": []}
+          "version_new": "", "notes": [], "target": ""}
 _STAMP = [0]                      # grows on every change of the state: data.js is rebuilt
 
 
@@ -267,7 +266,7 @@ def source_release(root, ref):
 
 def newer(here, there):
     """(the new version's number, the notes of every release newer than here up to it, newest first), or ("", [])
-    when either file is missing or the source's number is not greater than the one here."""
+    unless the source announces a newer version with nonempty release notes."""
     if not here or not there:
         return "", []
     low, high = version_key(here["version"]), version_key(there["version"])
@@ -276,9 +275,27 @@ def newer(here, there):
     found = {}
     for release in there["releases"]:
         key = version_key(release["version"])
-        if low < key <= high:
+        if low < key <= high and release["notes"]:
             found.setdefault(key, release)
+    if high not in found:
+        return "", []
     return there["version"], [found[key] for key in sorted(found, reverse=True)][:RELEASES_SHOWN]
+
+
+def published_release(root, tip, here):
+    """Find when the currently advertised version first became ready on the source branch."""
+    version, _ = newer(here, source_release(root, tip))
+    if not version:
+        return "", "", []
+    number = version_key(version)
+    target, fresh, notes = "", "", []
+    history = git(root, "log", "--first-parent", "--format=%H", "HEAD.." + tip, "--", RELEASE_PATH)
+    for commit in history.splitlines():
+        announced, summary = newer(here, source_release(root, commit))
+        if not announced or version_key(announced) != number:
+            break
+        target, fresh, notes = commit, announced, summary
+    return target, fresh, notes
 
 
 def set_state(**values):
@@ -288,10 +305,10 @@ def set_state(**values):
 
 
 def check(root=None, fetch=True):
-    """One check: fetch, then compare. Returns the new state (a copy). Never raises."""
+    """Fetch and look for a ready release in the announced source. Never raises."""
     root = root or HERE
     with _LOCK:
-        set_state(state="checking", error="")
+        set_state(state="checking", error="", target="")
         try:
             source, why = update_source(root)
             if source is None:
@@ -300,10 +317,21 @@ def check(root=None, fetch=True):
             remote, branch, ref = source
             if fetch:
                 git(root, "fetch", "--quiet", "--no-tags", remote, branch, timeout=FETCH_TIMEOUT)
-            ahead, behind = compare(root, ref)
-            state = "current" if not ahead and not behind else "available" if not ahead else "ahead" if not behind else "diverged"
-            fresh, notes = newer(running_release(root), source_release(root, ref)) if state == "available" else ("", [])
-            set_state(state=state, behind=behind, ahead=ahead, source=ref, error="", checked=now_text(), version_new=fresh, notes=notes)
+            tip = git(root, "rev-parse", ref)
+            ahead, behind = compare(root, tip)
+            state = ("diverged" if behind else "ahead") if ahead else "current"
+            fresh, notes, target = "", [], ""
+            if behind and not ahead:
+                published, version, release_notes = published_release(root, tip, running_release(root))
+                if published:
+                    release_ahead, release_behind = compare(root, published) if published != tip else (ahead, behind)
+                    if not release_ahead and release_behind:
+                        state, fresh, notes, target = "available", version, release_notes, published
+                        behind = release_behind
+                if not target:
+                    behind = 0
+            set_state(state=state, behind=behind, ahead=ahead, source=ref, error="", checked=now_text(),
+                      version_new=fresh, notes=notes, target=target)
         except UpdateError as exc:
             set_state(state="error", error=str(exc), checked=now_text(), version_new="", notes=[])
         except Exception as exc:     # the program goes on whatever happens here
@@ -311,8 +339,8 @@ def check(root=None, fetch=True):
         return dict(_STATE)
 
 
-def apply(root=None):
-    """The button «Обновить»: check again, then a fast-forward only. Returns a result for the window."""
+def apply(root=None, *, expected=""):
+    """Fast-forward to the exact release the user saw, after rechecking the source."""
     root = root or HERE
     result = check(root)
     if result["state"] != "available":
@@ -322,19 +350,23 @@ def apply(root=None):
     over_text = "обновление принесло бы файлы на место ваших файлов, они были бы потеряны — обновление не запускалось"
     local_text = "в файлах программы есть свои правки — обновление не запускалось"
     with _LOCK:
+        target = result["target"]
+        if expected != target or _STATE["target"] != target:
+            return {"ok": False, "code": "release-changed", "error": "Подтвердите выпуск, показанный сейчас.",
+                    "updates": dict(_STATE)}
         try:
             changed = local_changes(root)
             if changed:
                 return {"ok": False, "code": "local-changes", "error": local_text,
                         "files": [shown(n) for n in changed[:20]], "updates": dict(_STATE)}
-            over = incoming_over_files(root, _STATE["source"])
+            over = incoming_over_files(root, target)
             if over:
                 return {"ok": False, "code": "incoming-over-files", "error": over_text,
                         "files": [shown(n) for n in over[:20]], "updates": dict(_STATE)}
             before = git(root, "rev-parse", "HEAD")
             try:
                 # --no-overwrite-ignore: if a file of the user's is still in the way, git refuses instead of replacing it
-                git(root, "merge", "--ff-only", "--no-overwrite-ignore", "--quiet", _STATE["source"], timeout=FETCH_TIMEOUT)
+                git(root, "merge", "--ff-only", "--no-overwrite-ignore", "--quiet", target, timeout=FETCH_TIMEOUT)
             except UpdateError as exc:
                 blocked, edited = blocked_by_git(exc.lines)
                 if edited:      # a local edit git sees and `git status` did not show (skip-worktree, or an edit just now)
@@ -362,6 +394,8 @@ def view():
     on = enabled()
     state = dict(_STATE) if on or _STATE["restart"] else dict(_STATE, state="off", version_new="", notes=[])
     state.pop("version", None)
+    if state["state"] != "available":
+        state.pop("target", None)
     here = running_release(HERE)
     return dict(state, enabled=on, version_here=here["version"] if here else "")
 
@@ -398,11 +432,11 @@ def update_check_now():
                 **({} if ok else {"code": "state", "state": result["state"], "detail": result["error"]}))
 
 
-def update_apply():
+def update_apply(target=""):
     """POST /update/apply: the button «Обновить»."""
     if not enabled():
         return {"ok": False, "code": "state", "state": "off", "error": "проверка обновлений выключена в настройках"}
-    result = apply()
+    result = apply(expected=target)
     with SYNC_LOCK:
         build()
         LAST_STAMPS[0] = stamps()

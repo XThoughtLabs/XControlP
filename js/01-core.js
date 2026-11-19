@@ -51,7 +51,8 @@
   const UPD_REFUSAL = {
     "local-changes": "В файлах программы есть свои правки — обновление не запускалось. Файлы с правками",
     "incoming-over-files": "Обновление принесло бы файлы на место ваших файлов, они были бы потеряны — обновление не запускалось. Перенесите эти файлы в другую папку и обновите снова",
-    "update-failed": "Обновление не удалось" };
+    "update-failed": "Обновление не удалось",
+    "release-changed": "Подтвердите выпуск, показанный сейчас." };
   function updRefusal(res) {
     const r = res && typeof res === "object" ? res : {};
     const own = (o, k) => typeof k === "string" && Object.prototype.hasOwnProperty.call(o, k);
@@ -62,18 +63,21 @@
   }
   // Версия и «что нового» (pult/release.json; программа отдаёт updates.version_here, version_new, notes).
   // Номера проверяются ещё раз; текст заметок — из файла выпусков новой версии, в окне только как текст (esc):
-  // язык окна, иначе английский, иначе русский. Здесь, а не в 10-settings.js: его проверяет window_test.
+  // язык окна, иначе английский, русский или иврит. Здесь, а не в 10-settings.js: его проверяет window_test.
   const VER_RE = /^[0-9]{1,4}(?:\.[0-9]{1,4}){2}$/;
   function updVersions() {
     const U = (window.BOARD && window.BOARD.updates) || {}, ok = (v) => typeof v === "string" && VER_RE.test(v);
     const here = ok(U.version_here) ? U.version_here : "";
     const fresh = here && (U.state === "available" || U.state === "updated") && ok(U.version_new) ? U.version_new : "";
-    return { here, fresh, notes: fresh && Array.isArray(U.notes) ? U.notes : [] };
+    const notes = fresh && Array.isArray(U.notes) ? U.notes : [];
+    const target = U.state === "available" && notes.length && typeof U.target === "string" &&
+      /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(U.target) ? U.target : "";
+    return { here, fresh, notes, target };
   }
   function updNotesHtml(notes) {
     const pick = (n) => {
       const o = n && n.notes && typeof n.notes === "object" ? n.notes : {};
-      const lang = [LANG, "en", "ru"].find((k) => Object.prototype.hasOwnProperty.call(o, k) && Array.isArray(o[k]) && o[k].length);
+      const lang = [LANG, "en", "ru", "he"].find((k) => Object.prototype.hasOwnProperty.call(o, k) && Array.isArray(o[k]) && o[k].length);
       return lang ? o[lang].filter((x) => typeof x === "string").slice(0, 10) : [];
     };
     const list = (Array.isArray(notes) ? notes : []).slice(0, 10).map((n) => [String(n && n.version || ""), pick(n)]).filter((x) => x[1].length);
@@ -85,8 +89,8 @@
   function renderUpdNote() {
     const el = $("updnote");
     if (!el) return;
-    const v = updVersions(), U = (window.BOARD && window.BOARD.updates) || {}, s = window.BOARD && window.BOARD.settings;
-    if (U.state !== "available" || !v.fresh || (s && s.ui && s.ui.version_hidden === v.fresh)) { el.hidden = true; el.innerHTML = ""; return; }
+    const v = updVersions(), s = window.BOARD && window.BOARD.settings;
+    if (!v.target || (s && s.ui && s.ui.version_hidden === v.fresh)) { el.hidden = true; el.innerHTML = ""; return; }
     el.hidden = false;
     el.innerHTML = '<div class="upd-note-head"><b>' + esc(tl("Вышла версия")) + ' ' + esc(v.fresh) + ' (' + esc(tl("у вас")) + ' ' + esc(v.here) + ')</b>' +
       '<button type="button" class="hq-x" data-ui="hide-version:' + esc(v.fresh) + '" aria-label="' + esc(tl("Закрыть это сообщение")) + '" title="' + esc(tl("Закрыть это сообщение")) + '">✕</button></div>' +
@@ -443,7 +447,7 @@
       '<span class="count">' + count + '</span></button>';
     const upd = (window.BOARD && window.BOARD.updates) || {};
     let html = (upd.restart ? '<button type="button" class="nav-upd done" data-set="open:updates">↻ ' + esc(tl("Перезапустите Пульт")) + '</button>'
-      : upd.state === "available" ? '<button type="button" class="nav-upd" data-set="open:updates">⬆ ' + esc(tl("Есть обновление")) + ' · ' + (upd.behind | 0) + '</button>' : "") +
+      : updVersions().target ? '<button type="button" class="nav-upd" data-set="open:updates">⬆ ' + esc(tl("Есть обновление")) + '</button>' : "") +
       navBtn(items[0]) + navBtn(["calendar", "▤", tl("Календарь"), calTodayCount()]) + navBtn(["day", "☑", tl("План дня"), dayLeftCount()]) + navBtn(["review", "▥", tl("Итоги дней"), rvWeekPercent()]) +
       navBtn(["stats", "▧", tl("Статистика"), ""]) + navBtn(["digest", "✉", tl("Сводки"), dgCount(), prSectionMark("digest")]) +
       navBtn(["reports", "▨", tl("Отчёты"), rpAll().length]) + navBtn(["summary", "☼", tl("Сводка дня"), prOf("summary").length, prSectionMark("summary")]) +

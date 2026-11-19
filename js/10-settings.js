@@ -65,27 +65,31 @@
   }
   // Обновления программы: переключатель (по умолчанию выключен), состояние последней проверки, «Проверить сейчас» и «Обновить».
   function updBody(u, chip) {
-    const U = (window.BOARD && window.BOARD.updates) || {}, on = u.updates === "on", st = UPD_TEXT[U.state] ? U.state : "off";
-    const line = esc(tl(on && st === "off" ? "Ещё не проверялось — нажмите «Проверить сейчас»" : UPD_TEXT[st])) + (st === "available" ? " " + esc(tl("Новых коммитов")) + ": " + (U.behind | 0) + "." : "") +
+    const U = (window.BOARD && window.BOARD.updates) || {}, on = u.updates === "on", V = updVersions();
+    let st = UPD_TEXT[U.state] ? U.state : "off";
+    if (!on && !U.restart) st = "off";
+    if (st === "available" && !V.target) st = "current";
+    const line = esc(tl(on && st === "off" ? "Ещё не проверялось — нажмите «Проверить сейчас»" : UPD_TEXT[st])) +
       (U.error && (st === "unavailable" || st === "error") ? ": " + esc(U.error) : "");
-    const V = updVersions();
-    return (V.here ? '<section class="set-sec"><h3>' + esc(tl("Версия")) + '</h3><p class="upd-ver">' + esc(tl("Ваша версия")) + ': <b>' + esc(V.here) + '</b>' +
-        (V.fresh ? ' · ' + esc(tl("Новая версия")) + ': <b>' + esc(V.fresh) + '</b>' : "") + '</p>' + (V.fresh ? updNotesHtml(V.notes) : "") + '</section>' : "") +
+    return (V.here ? '<section class="set-sec"><h3>' + esc(tl("Версия")) + '</h3><p class="upd-ver">' + esc(tl("Ваша версия")) + ': <b>' + esc(V.here) + '</b></p></section>' : "") +
       '<section class="set-sec"><h3>' + esc(tl("Проверка обновлений")) + '</h3><div class="set-row">' +
       chip("updates", "off", esc(tl("Выключена")), !on) + chip("updates", "on", esc(tl("Включена")), on) + '</div>' +
       '<p class="set-note">' + esc(tl("Когда включена, Пульт при запуске и при синхронизации спрашивает GitHub, есть ли новая версия программы. Обновляет только по кнопке; ваши данные не трогает.")) + '</p></section>' +
       '<section class="set-sec"><h3>' + esc(tl("Состояние")) + '</h3><p class="upd-line upd-' + st + '">' + line + '</p>' +
       (U.source && on ? '<p class="set-note">' + esc(tl("Источник")) + ': ' + esc(U.source) + (U.checked ? " · " + esc(tl("проверено")) + " " + esc(stamp(U.checked)) : "") + '</p>' : "") +
+      (st === "available" ? '<h4>' + esc(tl("Новая версия")) + ' ' + esc(V.fresh) + '</h4>' + updNotesHtml(V.notes) : "") +
       (U.restart ? '<p class="set-ok">' + esc(tl("Закройте окно Пульта и запустите его снова, чтобы работала новая версия.")) + '</p>' : "") +
       '<div class="set-row">' + (on ? '<button type="button" class="svc-btn" data-upd="check"' + (setBusy || st === "checking" ? " disabled" : "") + '>' + esc(tl("Проверить сейчас")) + '</button>' : "") +
-      (on && st === "available" ? '<button type="button" class="svc-btn" data-upd="apply"' + (setBusy ? " disabled" : "") + '>' + esc(tl("Обновить программу")) + '</button>' : "") + '</div></section>';
+      (on && st === "available" ? '<button type="button" class="svc-btn" data-upd="apply" data-target="' + esc(V.target) + '"' +
+        (setBusy ? " disabled" : "") + '>' + esc(tl("Обновить программу")) + '</button>' : "") + '</div></section>';
   }
-  async function updAction(kind) {
+  async function updAction(kind, target) {
     if (!token) { setFiles = []; setMsg = tl("Кнопка работает, когда Пульт открыт ярлыком «XControlP» на рабочем столе."); renderSettings(); return; }
     setFiles = []; setMsg = ""; setOk = ""; setBusy = true; renderSettings();
     let res = {};
     try {
-      const r = await fetch("/update/" + (kind === "apply" ? "apply" : "check"), { method: "POST", headers: { "X-Pult-Token": token } });
+      const route = kind === "apply" ? "apply?target=" + encodeURIComponent(target || "") : "check";
+      const r = await fetch("/update/" + route, { method: "POST", headers: { "X-Pult-Token": token } });
       res = await r.json().catch(() => ({ ok: false, error: tl("ответ ") + r.status }));
     } catch (err) { res = { ok: false, error: String(err && err.message || err) }; }
     setBusy = false;
@@ -391,7 +395,7 @@
     const hx = e.target.closest("[data-ui]");
     if (hx && !hx.disabled) { uiAction(hx.dataset.ui); return; }
     const ux = e.target.closest("[data-upd]");
-    if (ux && !ux.disabled) { updAction(ux.dataset.upd); return; }
+    if (ux && !ux.disabled) { updAction(ux.dataset.upd, ux.dataset.target); return; }
     const sx = e.target.closest("[data-set]");
     if (sx && !sx.disabled) { settingsAction(sx.dataset.set); return; }
     const dg = e.target.closest("[data-dg]");

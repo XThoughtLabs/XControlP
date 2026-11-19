@@ -47,6 +47,21 @@ def commit(work, name, text):
     return sh(work, "rev-parse", "HEAD")
 
 
+def release_text(version, *releases):
+    return json.dumps({"version": version, "releases": [
+        {"version": v, "notes": {"en": ["E " + v], "ru": ["Р " + v], "he": ["ע " + v]}}
+        for v in releases]}, ensure_ascii=False)
+
+
+def stage_release(writer):
+    path = writer / "pult/release.json"
+    patch = int(json.loads(path.read_text(encoding="utf-8"))["version"].rsplit(".", 1)[1]) if path.exists() else 0
+    version = f"1.0.{patch + 1:02d}"
+    path.parent.mkdir(exist_ok=True)
+    path.write_text(release_text(version, version), encoding="utf-8")
+    sh(writer, "add", "pult/release.json")
+
+
 def world(base, name, branch="modules"):
     """A bare 'GitHub' repository, a writer clone that publishes, and the program's clone (the Pult)."""
     remote, writer, program = base / (name + ".git"), base / (name + "-writer"), base / (name + "-pult")
@@ -55,6 +70,7 @@ def world(base, name, branch="modules"):
     sh(writer, "checkout", "-q", "-b", branch)
     (writer / ".gitignore").write_text("data.js\nsettings.json\nreports/\nnotes\nlinks\n*.dat\n", encoding="utf-8")
     sh(writer, "add", ".gitignore")
+    stage_release(writer)
     commit(writer, "app.py", "v1\n")
     sh(writer, "push", "-q", "origin", branch)
     sh(base, "clone", "-q", "-b", branch, str(remote), str(program))
@@ -69,6 +85,8 @@ def force(writer, rel, text, message, branch="modules"):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     sh(writer, "add", "-f", "--", rel)
+    if rel != "pult/release.json":
+        stage_release(writer)
     sh(writer, "commit", "-q", "-m", message)
     sh(writer, "push", "-q", "origin", branch)
 
@@ -82,7 +100,9 @@ def link(target, path):
         return False
 
 
-def publish(writer, name, text, branch="modules"):
+def publish(writer, name, text, branch="modules", *, released=True):
+    if released:
+        stage_release(writer)
     head = commit(writer, name, text)
     sh(writer, "push", "-q", "origin", branch)
     return head
@@ -94,6 +114,9 @@ def main():
         return 1
     import pult.updates as up
     import pult.settings as settings
+
+    def apply_offered(program):
+        return up.apply(program, expected=up.check(program)["target"])
 
     base = pathlib.Path(tempfile.mkdtemp(prefix="update-test-"))
     try:
@@ -114,7 +137,7 @@ def main():
 
         # U3: a tracked file changed locally: no update, the file and HEAD stay as they are.
         (program / "app.py").write_text("my edit\n", encoding="utf-8")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U3 local change to a tracked file: refused, file and HEAD kept",
               not r["ok"] and "правки" in r["error"] and (program / "app.py").read_text(encoding="utf-8") == "my edit\n"
               and sh(program, "rev-parse", "HEAD") == head_before, repr(r))
@@ -123,7 +146,7 @@ def main():
         sh(program, "checkout", "-q", "--", "app.py")
 
         # U4: the update: a fast-forward to the source; data files (ignored) untouched; restart asked.
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U4 update: fast-forward to the source, data untouched, restart asked",
               r["ok"] and r.get("restart") is True and sh(program, "rev-parse", "HEAD") == new
               and (program / "app.py").read_text(encoding="utf-8") == "v2\n"
@@ -134,13 +157,13 @@ def main():
         # U5: local commits only: ahead, the button refuses, nothing changes.
         remote, writer, program = world(base, "u5")
         mine = commit(program, "local.py", "mine\n")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U5 own commits only: ahead, update refused, HEAD kept",
               r["updates"]["state"] == "ahead" and not r["ok"] and sh(program, "rev-parse", "HEAD") == mine, repr(r))
 
         # U6: own commits and new commits on the source: diverged, refused, no merge commit made.
         publish(writer, "app.py", "v2\n")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U6 diverged: refused, no merge, HEAD kept",
               r["updates"]["state"] == "diverged" and not r["ok"] and sh(program, "rev-parse", "HEAD") == mine
               and sh(program, "rev-list", "--count", "HEAD") == "2", repr(r))
@@ -208,10 +231,11 @@ def main():
         remote, writer, program = world(base, "u15")
         (writer / "data.js").write_text("example\n", encoding="utf-8")
         sh(writer, "add", "-f", "data.js")
+        stage_release(writer)
         sh(writer, "commit", "-q", "-m", "an example data file")
         sh(writer, "push", "-q", "origin", "modules")
         head = sh(program, "rev-parse", "HEAD")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U15 the update would overwrite an ignored data file: refused, named, file and HEAD kept",
               not r["ok"] and "data.js" in r.get("files", []) and sh(program, "rev-parse", "HEAD") == head
               and (program / "data.js").read_text(encoding="utf-8") == "my data\n", repr(r))
@@ -229,7 +253,7 @@ def main():
         real_run = up.subprocess.run
         up.subprocess.run = lambda *a, **k: calls.append(list(a[0])) or real_run(*a, **k)
         try:
-            r = up.apply(program)
+            r = apply_offered(program)
         finally:
             up.subprocess.run = real_run
         check("U26 the refusal comes from the program's own list: no merge is run", refused(r, program, "data.js")
@@ -240,11 +264,12 @@ def main():
         publish(writer, "tmpl.txt", "template\n")
         sh(program, "pull", "-q", "--ff-only")
         sh(writer, "mv", "-f", "tmpl.txt", "data.js")
+        stage_release(writer)
         sh(writer, "commit", "-q", "-m", "rename into data.js")
         sh(writer, "push", "-q", "origin", "modules")
         up.check(program)
         named = up.incoming_over_files(program, "origin/modules")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U18 a rename into an ignored data path: found, refused, file kept", named == ["data.js"] and refused(r, program, "data.js")
               and (program / "data.js").read_text(encoding="utf-8") == "my data\n", repr((named, r)))
 
@@ -255,7 +280,7 @@ def main():
         force(writer, "reports/r.md", "example report\n", "an example report")
         up.check(program)
         named = up.incoming_over_files(program, "origin/modules")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U19 a file inside an ignored folder: found, refused, file kept", named == ["reports/r.md"] and refused(r, program, "reports/r.md")
               and (program / "reports" / "r.md").read_text(encoding="utf-8") == "my report\n", repr((named, r)))
 
@@ -267,7 +292,7 @@ def main():
             force(writer, "links", "a file\n", "a file named links")
             up.check(program)
             named = up.incoming_over_files(program, "origin/modules")
-            r = up.apply(program)
+            r = apply_offered(program)
             check("U20 a dangling ignored link at an incoming path: found, refused, link kept", named == ["links"]
                   and refused(r, program, "links") and os.path.islink(program / "links"), repr((named, r)))
 
@@ -279,7 +304,7 @@ def main():
         head = sh(program, "rev-parse", "HEAD")
         up.check(program)
         named = up.incoming_over_files(program, "origin/modules")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U21 a folder over the user's ignored file: found, refused, file and HEAD kept", named == ["notes"]
               and refused(r, program, "notes") and (program / "notes").read_text(encoding="utf-8") == "my notes\n"
               and sh(program, "rev-parse", "HEAD") == head, repr((named, r)))
@@ -289,7 +314,7 @@ def main():
         real_over = up.incoming_over_files
         up.incoming_over_files = lambda root, ref: []
         try:
-            r = up.apply(program)
+            r = apply_offered(program)
         finally:
             up.incoming_over_files = real_over
         check("U23 git's own refusal (--no-overwrite-ignore): refused, named, file and HEAD kept", refused(r, program, "notes")
@@ -305,7 +330,7 @@ def main():
             force(writer, "links/new.md", "new\n", "a links folder")
             up.check(program)
             named = up.incoming_over_files(program, "origin/modules")
-            r = up.apply(program)
+            r = apply_offered(program)
             check("U22 a folder over the user's ignored link: found, refused, link kept", named == ["links"]
                   and refused(r, program, "links") and os.path.islink(program / "links"), repr((named, r)))
 
@@ -322,7 +347,7 @@ def main():
         force(writer, " my.dat", "{}\n", "a name with a leading space")
         up.check(program)
         named = up.incoming_over_files(program, "origin/modules")
-        r = up.apply(program)
+        r = apply_offered(program)
         want = sorted([" my.dat"] + ([odd] if odd else []))
         check("U24 a leading space and a name that is not UTF-8: found, refused, files kept", sorted(named) == want
               and refused(r, program, " my.dat") and (not odd or "d\ufffd.dat" in r.get("files", []))
@@ -336,9 +361,10 @@ def main():
         (writer / "tool").mkdir()
         (writer / "tool" / "main.py").write_text("now a folder\n", encoding="utf-8")
         sh(writer, "add", "tool/main.py")
+        stage_release(writer)
         sh(writer, "commit", "-q", "-m", "tool becomes a folder")
         sh(writer, "push", "-q", "origin", "modules")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U25 a program file that becomes a folder: not refused, the update runs", r["ok"]
               and (program / "tool" / "main.py").read_text(encoding="utf-8") == "now a folder\n"
               and (program / "data.js").read_text(encoding="utf-8") == "my data\n", repr(r))
@@ -351,7 +377,7 @@ def main():
         sh(program, "update-index", "--skip-worktree", "app.py")
         (program / "app.py").write_text("my edit\n", encoding="utf-8")
         head = sh(program, "rev-parse", "HEAD")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U27 a hidden local edit of a program file: refused as local changes, file and HEAD kept",
               not r["ok"] and r.get("code") == "local-changes" and r.get("files") == ["app.py"] and r["updates"]["state"] == "available"
               and (program / "app.py").read_text(encoding="utf-8") == "my edit\n" and sh(program, "rev-parse", "HEAD") == head, repr(r))
@@ -364,7 +390,7 @@ def main():
         sh(program, "pull", "-q", "--ff-only")
         sh(writer, "rm", "-q", "-r", "lib")
         publish(writer, "lib", "now a file\n")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U28 a program folder that becomes a file: not refused, the update runs", r["ok"]
               and (program / "lib").read_text(encoding="utf-8") == "now a file\n", repr(r))
         remote, writer, program = world(base, "u28b")
@@ -376,7 +402,7 @@ def main():
         publish(writer, "lib", "now a file\n")
         up.check(program)
         named = up.incoming_over_files(program, "origin/modules")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U28b the same folder holding a user's ignored file: found, refused, folder named, file kept", named == ["lib"] and refused(r, program, "lib")
               and (program / "lib" / "mine.dat").read_text(encoding="utf-8") == "mine\n", repr((named, r)))
 
@@ -387,15 +413,15 @@ def main():
         publish(writer, "more.py", "x\n")
         sh(program, "mv", "README.md", "docs.md")
         (program / "app.py").write_text("my edit\n", encoding="utf-8")
-        r = up.apply(program)
+        r = apply_offered(program)
         check("U3c local changes with a rename: exactly the new name and the edited file", not r["ok"] and r.get("code") == "local-changes"
               and sorted(r.get("files", [])) == ["app.py", "docs.md"], repr(r))
 
         # U29 (H6): the button's other answers carry a code and the state: nothing to update, own commits only.
         remote, writer, program = world(base, "u29")
-        current = up.apply(program)
+        current = apply_offered(program)
         commit(program, "local.py", "mine\n")
-        ahead = up.apply(program)
+        ahead = apply_offered(program)
         check("U29 nothing to update and own commits: refused with code «state» and the state", not current["ok"]
               and current.get("code") == "state" and current.get("state") == "current" and not ahead["ok"]
               and ahead.get("code") == "state" and ahead.get("state") == "ahead", repr((current, ahead)))
@@ -411,7 +437,7 @@ def main():
             return real_git(root, *args, **kw)
         up.git = failing
         try:
-            r = up.apply(program)
+            r = apply_offered(program)
         finally:
             up.git = real_git
         check("U30 another refusal of the merge: code update-failed, git's line as detail, state error", not r["ok"]
@@ -419,8 +445,7 @@ def main():
 
         # XCP-34: the version number and «what's new» (pult/release.json). Missing names fail each check, not the run.
         parse, key, newer = (getattr(up, n, None) for n in ("parse_release", "version_key", "newer"))
-        rel = lambda version, *releases: json.dumps({"version": version, "releases": [
-            {"version": v, "notes": {"en": ["E " + v], "ru": ["Р " + v], "he": ["ע " + v]}} for v in releases]}, ensure_ascii=False)
+        rel = release_text
         limit = getattr(up, "RELEASE_MAX", 65536)
 
         # U31: the release file is read only when it is whole and small: a good one; broken, too big, a bad own number,
@@ -456,8 +481,6 @@ def main():
         # U33: the check reads the update's release file from the fetched objects: one fetch only, the new number and the notes;
         # the program's own file stays the version that runs, even when the file on disk changes.
         remote, writer, program = world(base, "u33")
-        force(writer, "pult/release.json", rel("1.0.01", "1.0.01"), "release 1.0.01")
-        sh(program, "pull", "-q", "--ff-only")
         getattr(up, "_RUNNING", {}).pop(str(program), None)
         force(writer, "pult/release.json", rel("1.0.03", "1.0.03", "1.0.02", "1.0.01"), "release 1.0.03")
         calls, real_run = [], up.subprocess.run
@@ -473,12 +496,12 @@ def main():
               r["state"] == "available" and r.get("version_new") == "1.0.03" and [n["version"] for n in r.get("notes", [])] == ["1.0.03", "1.0.02"]
               and r["notes"][0]["notes"]["he"] == ["ע 1.0.03"] and len(fetches) == 1 and running == "1.0.01", repr((r, len(fetches), running)))
 
-        # U34: an update without a release file, with a broken one, or with the same number: works as before, without a number or notes.
+        # U34: only a newer version with a matching, nonempty summary can be offered.
         found = []
-        for i, text in enumerate((None, "{broken", rel("1.0.1", "1.0.1"))):      # 1.0.1 is the same number as 1.0.01
+        unpublished = json.dumps({"version": "1.0.02", "releases": [{"version": "1.0.02", "notes": {"en": [" "]}}]})
+        manifests = (None, "{broken", rel("1.0.1", "1.0.1"), rel("1.0.03", "1.0.02"), unpublished)
+        for i, text in enumerate(manifests):
             remote, writer, program = world(base, f"u34{i}")
-            force(writer, "pult/release.json", rel("1.0.01", "1.0.01"), "release 1.0.01")
-            sh(program, "pull", "-q", "--ff-only")
             if text is None:
                 sh(writer, "rm", "-q", "pult/release.json")
                 sh(writer, "commit", "-q", "-m", "no release file")
@@ -486,14 +509,12 @@ def main():
             else:
                 force(writer, "pult/release.json", text, "release file " + str(i))
             r = up.check(program)
-            found.append((r["state"], r.get("version_new"), r.get("notes")))
-        check("U34 no file, a broken file or the same number in the update: available as before, no number, no notes",
-              found == [("available", "", [])] * 3, repr(found))
+            found.append((r["state"], r["version_new"], r["notes"], r["target"]))
+        check("U34 missing or invalid manifest, same number, missing release entry, or blank notes: no update",
+              found == [("current", "", [], "")] * len(manifests), repr(found))
 
         # U35: a release file over the size limit in the update: not read at all (its size is asked first), no notes.
         remote, writer, program = world(base, "u35")
-        force(writer, "pult/release.json", rel("1.0.01", "1.0.01"), "release 1.0.01")
-        sh(program, "pull", "-q", "--ff-only")
         force(writer, "pult/release.json", rel("1.0.02", "1.0.02") + " " * (limit + 1), "too big")
         blobs, real_raw = [], up.git_raw
         up.git_raw = lambda root, *a, **k: (blobs.append(a) if a[:2] == ("cat-file", "blob") else None) or real_raw(root, *a, **k)
@@ -502,7 +523,42 @@ def main():
         finally:
             up.git_raw = real_raw
         check("U35 too big a release file in the update: its content is never read, no number, no notes",
-              r["state"] == "available" and r.get("version_new") == "" and r.get("notes") == [] and not blobs, repr((r, blobs)))
+              r["state"] == "current" and r["version_new"] == "" and r["notes"] == [] and not blobs, repr((r, blobs)))
+
+        remote, writer, program = world(base, "u37")
+        (writer / "docs").mkdir()
+        publish(writer, "docs/release.json", rel("9.9.99", "9.9.99"), released=False)
+        ordinary = up.check(program)
+        check("U37 ordinary commits and manifests at other paths do not announce an update",
+              ordinary["state"] == "current" and ordinary["behind"] == 0 and not ordinary["target"], repr(ordinary))
+
+        released = publish(writer, "app.py", "ready\n")
+        publish(writer, "app.py", "unreleased work\n", released=False)
+        amended = json.loads(rel("1.0.02", "1.0.02"))
+        amended["releases"][0]["notes"]["en"] = ["Edited notes for the same release"]
+        force(writer, "pult/release.json", json.dumps(amended), "edit notes without releasing")
+        offer = up.check(program)
+        applied = up.apply(program, expected=offer["target"])
+        check("U38 later commits and edits to the same version's notes do not move the release",
+              offer["target"] == released and offer["version_new"] == "1.0.02"
+              and offer["notes"][0]["notes"]["en"] == ["E 1.0.02"]
+              and applied["ok"] and sh(program, "rev-parse", "HEAD") == released
+              and (program / "app.py").read_text(encoding="utf-8") == "ready\n", repr((offer, applied)))
+
+        remote, writer, program = world(base, "u39")
+        first = publish(writer, "app.py", "first release\n")
+        seen = up.check(program)
+        latest = publish(writer, "app.py", "second release\n")
+        before = sh(program, "rev-parse", "HEAD")
+        stale = up.apply(program, expected=first)
+        missing = up.apply(program)
+        unchanged = sh(program, "rev-parse", "HEAD") == before
+        applied = up.apply(program, expected=latest)
+        check("U39 a changed or missing confirmation cannot install until the new offer is confirmed",
+              seen["target"] == first and stale.get("code") == missing.get("code") == "release-changed"
+              and stale["updates"]["target"] == latest and stale["updates"]["version_new"] == "1.0.03"
+              and unchanged and applied["ok"] and sh(program, "rev-parse", "HEAD") == latest,
+              repr((seen, stale, missing, applied)))
 
         # U36: the window gets the version that runs with the check off (no git), and no new number while it is off.
         real_settings = up.read_settings

@@ -60,7 +60,7 @@ function data(icons, extra) {
   return Object.assign(d, extra || {});
 }
 
-function main() {
+async function main() {
   // W1: a group's symbol reaches the menu as text, never as markup (style "base", the default).
   {
     const p = page();
@@ -446,7 +446,7 @@ function main() {
   };
   const NOTES = [{ version: "1.0.03", notes: { en: ["Third <b>bold</b>"], ru: ["Третья"], he: ["שלישית"] } },
     { version: "1.0.02", notes: { en: ['<img src=x onerror="alert(1)">'], ru: ["Вторая"] } }];
-  const AVAILABLE = { state: "available", behind: 2, version_here: "1.0.01", version_new: "1.0.03", notes: NOTES };
+  const AVAILABLE = { state: "available", behind: 2, version_here: "1.0.01", version_new: "1.0.03", notes: NOTES, target: "a".repeat(40) };
   // W26: the line shows the version that runs, also with the check off; a value that is not a version shows nothing.
   {
     const on = verPage("ru", { state: "off", version_here: "1.0.01", version_new: "", notes: [] });
@@ -501,8 +501,36 @@ function main() {
       && got[1].indexOf("1.0.02") >= 0 && got[2] === "" && got[3] === "", JSON.stringify(got));
   }
 
+  {
+    const p = verPage("en", { ...AVAILABLE, target: "", notes: [] });
+    const script = fs.readFileSync(path.join(ROOT, "js", "10-settings.js"), "utf8");
+    p.run("let setBusy = false, setFiles = [], setMsg = '', setOk = '';\n" +
+      script.slice(script.indexOf("  function updBody("), script.indexOf("  function openSettings(")));
+    const requests = [];
+    Object.assign(p.ctx, {
+      token: "t", renderSettings() {}, refresh() {},
+      fetch: async (url) => {
+        requests.push(url);
+        return { json: async () => ({ ok: true, updates: AVAILABLE }) };
+      }
+    });
+    const body = () => p.run('updBody({ updates: "on" }, () => "")');
+    const before = body();
+    await p.run('updAction("check")');
+    const offer = body();
+    const button = 'data-upd="apply" data-target="' + AVAILABLE.target + '"';
+    const checkOnly = requests.length === 1 && requests[0] === "/update/check";
+    await p.run("updAction('apply', " + JSON.stringify(AVAILABLE.target) + ")");
+    check("W31 manual check shows release notes before the button that confirms that exact release",
+      !before.includes('data-upd="apply"') && !before.includes("Update available") &&
+      checkOnly && offer.includes("Update available") && offer.includes("1.0.03") &&
+      offer.includes("Third &lt;b&gt;bold&lt;/b&gt;") && offer.includes(button) &&
+      offer.indexOf("Third &lt;b&gt;bold&lt;/b&gt;") < offer.indexOf(button) &&
+      requests[1] === "/update/apply?target=" + AVAILABLE.target, JSON.stringify({ before, offer, requests }));
+  }
+
   console.log("\nPassed " + PASSED.length + ", failed " + FAILED.length + (FAILED.length ? ": " + FAILED.join(", ") : ""));
   return FAILED.length ? 1 : 0;
 }
 
-process.exitCode = main();
+main().then((code) => { process.exitCode = code; }, (err) => { console.error(err); process.exitCode = 1; });

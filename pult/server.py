@@ -109,7 +109,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                    "/settings": lambda: save_settings(query), "/alerts": lambda: save_alert(query),
                    "/digest/mark": lambda: digest_mark(query), "/idea/flag": lambda: save_flag(query),
                    "/idea/service-remove": lambda: remove_service(query), "/report/reveal": lambda: reveal_report(query),
-                   "/proposal": lambda: save_proposal(query), "/update/check": update_check_now, "/update/apply": update_apply,
+                   "/proposal": lambda: save_proposal(query), "/update/check": update_check_now,
+                   "/update/apply": lambda: update_apply(query.get("target", [""])[0]),
                    "/ui": lambda: save_ui(query)}
         if path not in actions and path not in ("/day/op", "/request"):
             self.send_error(404)

@@ -1,6 +1,23 @@
 {
- "version": "1.0.01",
+ "version": "1.0.02",
  "releases": [
+  {
+   "version": "1.0.02",
+   "notes": {
+    "en": [
+     "The dashboard offers updates only for ready releases announced in the release file.",
+     "Check now shows the new version and its summary before you approve installation."
+    ],
+    "ru": [
+     "Пульт предлагает обновление только для готового выпуска, объявленного в файле выпусков.",
+     "После проверки номер и сводка новой версии видны до подтверждения установки."
+    ],
+    "he": [
+     "הלוח מציע עדכון רק לגרסה מוכנה שהוכרזה בקובץ הגרסאות.",
+     "לאחר הבדיקה מוצגים מספר הגרסה ותקציר השינויים לפני אישור ההתקנה."
+    ]
+   }
+  },
   {
    "version": "1.0.01",
    "notes": {
