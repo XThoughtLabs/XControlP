@@ -170,8 +170,13 @@
   // Отдел «Развитие» — личные планы (карьера, оборудование, заработок): свой раздел, в «Обзор» не входит, тревог не даёт.
   const DEV = "Развитие";
   const DAY = 86400000;
-  const state = { view: decodeURIComponent(location.hash.slice(1)) || "all", period: 30, open: null, ideaFilter: "all" };
+  const STAGE3_LAYOUT = document.body.dataset.stage3Layout || "projects-first";
+  const state = { view: decodeURIComponent(location.hash.slice(1)) || (STAGE3_LAYOUT === "working-day" ? "day" : "all"), period: 30, open: null, ideaFilter: "all", projectGroup: "__all" };
   const IDEA_KIND = { road: tl("В дорожной карте"), done: tl("Сделано"), explore: tl("Исследовать"), idea: tl("Идеи и наброски"), decision: tl("Решения CEO"), future: tl("На будущее"), wait: tl("Ждут и отложены"), dropped: tl("Отказались") };
+  const IDEA_STANDARD_STATUS = { "сделано": "done", "в дорожной карте": "road", "решение": "decision", "решение ceo": "decision",
+    "исследовать": "explore", "отказ": "dropped", "отказались": "dropped", "ждёт": "wait", "ждет": "wait", "отложено": "wait",
+    "идея": "idea", "идея на будущее": "future", "на будущее": "future" };
+  const ideaStandardStatus = (status) => IDEA_STANDARD_STATUS[String(status || "").trim().toLowerCase()] || "";
   function ideaKind(status) {
     const s = String(status || "").toLowerCase();
     if (s.startsWith("сделано")) return "done";
@@ -280,7 +285,7 @@
     const ideaSets = rawSets.map((set, i) => {
       const items = (set.items || []).map((it) => ({
         id: String(it.id || ""), date: parseDate(it.date), title: trIdea(it.title || it.id || ""), fullTitle: trIdea(it.full_title || ""),
-        status: trIdea(it.status || ""), kind: it.kind && it.kind !== "idea" ? it.kind : ideaKind(it.status), notes: Array.isArray(it.notes) ? it.notes.map(trNote) : [],
+        status: trIdea(it.status || ""), statusKey: ideaStandardStatus(it.status || ""), kind: it.kind && it.kind !== "idea" ? it.kind : ideaKind(it.status), notes: Array.isArray(it.notes) ? it.notes.map(trNote) : [],
         project: it.project || "", links: Array.isArray(it.links) ? it.links.map(String) : []
       }));
       const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(set.updated || "");
@@ -375,7 +380,7 @@
 
   function visibleProjects() {
     if (state.view === "all") return board.projects.filter((p) => p.group !== DEV);
-    if (state.view === "alerts") return board.projects.filter((p) => alertsOf(p).length);
+    if (state.view === "alerts") return board.projects.filter((p) => alertsOf(p).length || dismissedOf(p).length);
     return board.projects.filter((p) => p.group === state.view);
   }
 
@@ -598,6 +603,74 @@
         '<td><span class="days' + (p.days > 30 ? " old" : "") + '">' + (p.days == null ? "—" : daysText(p.days)) + '</span></td></tr>').join("") + '</tbody>';
   }
 
+  function stage3Groups(list, cls) {
+    const groups = board.groups.filter((g) => list.some((p) => p.group === g));
+    const btn = (key, label, count) => '<button type="button" class="' + (state.projectGroup === key ? "active" : "") + '" data-pgroup="' + esc(key) + '" aria-pressed="' + (state.projectGroup === key) + '">' +
+      esc(label) + ' <span class="n">' + count + '</span></button>';
+    return '<div class="stage3-filters" role="group" aria-label="' + esc(tl("Группы проектов")) + '">' +
+      btn("__all", tl("Все группы"), list.length) + groups.map((g) => btn(g, td(g), list.filter((p) => p.group === g).length)).join("") + '</div>';
+  }
+
+  function stage3Projects(list) {
+    return state.projectGroup === "__all" ? list : list.filter((p) => p.group === state.projectGroup);
+  }
+
+  function stage3Proposal(projectId) {
+    const answers = (board.answers || []);
+    for (const a of answers) {
+      for (const p of (a.data && Array.isArray(a.data.proposals) ? a.data.proposals : [])) {
+        if (p.project !== projectId) continue;
+        const key = prKey(a, p), mark = prMark(key);
+        if (mark && (mark.state === "accepted" || mark.state === "declined")) continue;
+        return { answer: a, proposal: p, key };
+      }
+    }
+    return null;
+  }
+
+  function renderProjectsFirst(list) {
+    const chartNav = $("overview-chart-nav");
+    chartNav.setAttribute("aria-label", tl("Графики"));
+    chartNav.innerHTML = '<span>' + esc(tl("Графики")) + '</span><button type="button" class="svc-btn" data-scroll-to="project-list">' + esc(tl("Проекты")) + '</button>';
+    const box = $("stage3"), attention = list.filter((p) => alertsOf(p).length || (p.days != null && p.days >= 14))
+      .sort((a, b) => (alertsOf(b).length - alertsOf(a).length) || ((b.days || 0) - (a.days || 0))).slice(0, 3);
+    const attentionRows = attention.length ? attention.map((p) => {
+      const alert = alertsOf(p)[0], next = p.stages[p.current + 1], linked = stage3Proposal(p.id);
+      return '<article class="pf-attention-row" data-open="' + esc(p.id) + '" tabindex="0">' +
+        '<div class="pf-attention-title"><b>' + esc(p.name) + '</b><span class="lamp ' + p.status + '"><i></i><span>' + STATUS_LABEL[p.status] + '</span></span></div>' +
+        '<div class="pf-attention-detail">' + (alert ? esc(alert.text) : esc(tl("Нет движения") + " · " + (p.days == null ? "—" : daysText(p.days)))) + '</div>' +
+        '<div class="pf-attention-stage"><span>' + esc(tl("Текущий этап")) + '</span><b class="stage-current-value">' + esc(p.stages[p.current] || "—") + '</b><span>' + esc(tl("Следующий этап")) + '</span><b>' + esc(next || tl("Следующий шаг не определён")) + '</b></div>' +
+        '<div class="pf-attention-last">' + esc(tl("Последнее движение")) + ': ' + (p.last ? fmt(p.last) : "—") + '</div>' +
+        '<div class="pf-attention-open"><button type="button" class="albtn" data-open="' + esc(p.id) + '">' + esc(tl("Открыть проект")) + '</button></div>' +
+        (linked ? '<div class="pf-attention-proposal"><b>' + esc(tl("Предложение штаба")) + '</b> · ' + esc(rpT(linked.proposal.text)) + '<div class="albtns">' +
+          planBtn("pr:" + linked.key, rpT(linked.proposal.text), p.id, tl("Из предложений штаба"), true) +
+          '<button type="button" class="albtn" data-goto="proposals">' + esc(tl("Открыть предложение")) + '</button></div></div>' : "") +
+        '</article>';
+    }).join("") : '<div class="empty">' + esc(tl("Внимание сейчас не требуется")) + '</div>';
+    const projects = stage3Projects(list);
+    const rows = projects.map((p) => {
+      const linked = stage3Proposal(p.id), alerts = alertsOf(p), next = p.stages[p.current + 1];
+      return '<article class="pf-project" data-open="' + esc(p.id) + '" tabindex="0">' +
+        '<div class="pf-project-head"><div><h3>' + esc(p.name) + '</h3><div class="pgroup">' + esc(td(p.group)) + ' · ' + STATUS_LABEL[p.status] + '</div></div>' +
+        '<button type="button" class="svc-btn" data-open="' + esc(p.id) + '">' + esc(tl("Открыть проект")) + '</button></div>' +
+        '<div class="pf-project-stages"><div><span>' + esc(tl("Текущий этап")) + '</span><b class="stage-current-value">' + esc(p.stages[p.current] || "—") + '</b></div>' +
+        '<div><span>' + esc(tl("Следующий этап")) + '</span><b>' + esc(next || tl("Следующий шаг не определён")) + '</b></div>' +
+        '<div><span>' + esc(tl("Последнее движение")) + '</span><b>' + (p.last ? fmt(p.last) + ' · ' + esc(p.days == null ? "—" : daysText(p.days)) : "—") + '</b></div></div>' +
+        (alerts.length ? '<div class="pf-alert-reason"><b>⚠ ' + esc(tl("Причина тревоги")) + '</b> · ' + esc(alerts[0].text) + '</div>' : "") +
+        (linked ? '<div class="pf-project-proposal"><b>' + esc(tl("Предложение штаба")) + '</b> · ' + esc(rpT(linked.proposal.text)) + '<div class="albtns">' +
+          planBtn("pr:" + linked.key, rpT(linked.proposal.text), p.id, tl("Из предложений штаба"), true) +
+          '<button type="button" class="albtn" data-goto="proposals">' + esc(tl("Открыть предложение")) + '</button></div></div>' : "") +
+        '</article>';
+    }).join("");
+    box.innerHTML = '<section class="card pf-needs"><div class="pf-section-head"><h2>' + esc(tl("Требует внимания")) + '</h2><div class="pf-section-actions">' +
+      '<button type="button" class="svc-btn" data-goto="day">' + esc(tl("План дня")) + '</button>' +
+      '<button type="button" class="svc-btn" data-scroll-to="project-list">' + esc(tl("Проекты")) + '</button>' +
+      '<button type="button" class="svc-btn" data-scroll-to="overviewCharts">' + esc(tl("Графики")) + '</button>' +
+      '<button type="button" class="svc-btn" data-goto="alerts">' + esc(tl("Тревоги")) + '</button></div></div><div class="pf-attention-list">' + attentionRows + '</div></section>' +
+      '<section class="card pf-list" id="project-list"><div class="pf-section-head"><h2>' + esc(tl("Проекты")) + ' · ' + projects.length + '</h2></div>' +
+      stage3Groups(list, "projects") + '<div class="pf-project-list">' + (rows || '<div class="empty">' + esc(tl("Здесь нет проектов")) + '</div>') + '</div></section>';
+  }
+
   function renderFeed(list) {
     const alerts = sysShown() ? sysAlerts() : [];
     list.forEach((p) => alertsOf(p).forEach((a) => alerts.push(a)));
@@ -607,15 +680,30 @@
     const events = eventsInPeriod(list).slice(0, 6);
     const dismissed = sysShown() ? sysDismissed() : [];
     list.forEach((p) => dismissedOf(p).forEach((a) => dismissed.push(a)));
-    const btn = (act, a, label) => '<button type="button" class="albtn" data-al="' + act + '" data-key="' + esc(a.key) + '">' + esc(tl(label)) + '</button>';
+    const btn = (act, a, label, primary) => '<button type="button" class="albtn' + (primary ? ' al-primary' : '') + '" data-al="' + act + '" data-key="' + esc(a.key) + '">' + esc(tl(label)) + '</button>';
     const alertHtml = (a, gone) => {
       const m = alertMark(a), repair = !gone && m && m.state === "repair", since = m && parseDate(m.at);
-      return '<div class="ev ' + a.level + (repair ? " repair" : "") + (gone ? " dismissed" : "") + '"><div class="head"><span class="ico">' + ico[a.level] + '</span>' + esc(a.title.toUpperCase()) +
+      const severity = a.level === "critical" ? tl("Критично") : a.level === "warning" ? tl("Внимание") : tl("Информация");
+      const canRepair = !gone && !repair;
+      const planResult = !gone ? planBtn("al:" + a.key, a.title + ": " + a.text, a.project, tl("Из тревоги"), !canRepair) : "";
+      const planStatus = /class="plan-in"/.test(planResult) ? planResult : "";
+      const planAction = /<button/.test(planResult) ? planResult : "";
+      const canPlan = !!planAction;
+      const detail = a.open && !gone ? '<button type="button" class="albtn" data-alopen="' + esc(a.open) + '">' + esc(tl("Открыть")) + '</button>' : "";
+      let primary = "", secondary = "", detailUsed = false;
+      if (gone) secondary = btn("active", a, "Вернуть");
+      else if (canRepair) primary = btn("repair", a, "Починить", true);
+      else if (canPlan) primary = planAction;
+      else if (detail) { primary = detail.replace('class="albtn"', 'class="albtn al-primary"'); detailUsed = true; }
+      if (!gone) {
+        secondary += repair ? btn("dismissed", a, "Убрать") + btn("active", a, "Вернуть") : btn("dismissed", a, "Убрать");
+        if (detail && !detailUsed) secondary += detail;
+        if (canPlan && canRepair) secondary += planAction;
+        if (planStatus) secondary += planStatus;
+      }
+      return '<div class="ev ' + a.level + (repair ? " repair" : "") + (gone ? " dismissed" : "") + '"><div class="head"><span class="ico" aria-hidden="true">' + ico[a.level] + '</span><span class="ev-level">' + esc(severity) + '</span><span class="ev-project">' + esc(nameOf(a.project)) + '</span>' +
         (repair ? '<span class="altag">' + esc(tl("В ПОЧИНКЕ")) + (since ? " · " + fmtShort(since) : "") + '</span>' : "") +
-        '</div><div class="body">' + esc(a.text) + '</div><div class="albtns">' +
-        (gone ? btn("active", a, "Вернуть") : repair ? btn("dismissed", a, "Убрать") + btn("active", a, "Вернуть") : btn("repair", a, "Починить") + btn("dismissed", a, "Убрать")) +
-        (a.open && !gone ? '<button type="button" class="albtn" data-alopen="' + esc(a.open) + '">' + esc(tl("Открыть")) + '</button>' : "") +
-        (gone ? "" : planBtn("al:" + a.key, a.title + ": " + a.text, a.project, tl("Из тревоги"))) + '</div></div>';
+        '</div><div class="body">' + esc(a.text) + '</div><div class="albtns">' + primary + secondary + '</div></div>';
     };
     const html = alerts.map((a) => alertHtml(a, false))
       .concat(dismissed.length ? ['<button type="button" class="allink" data-al="toggle">' + esc(state.alShowGone ? tl("Скрыть убранные") : tl("Убранные: ") + dismissed.length) + '</button>'] : [])
@@ -641,7 +729,7 @@
   }
 
   // Ideas: the registry IDEAS.md, read by the launcher at start (the file itself is never changed).
-  const ideaChip = (it) => '<span class="ichip ' + it.kind + '"><i></i><span>' + esc(it.status || "—") + '</span></span>';
+  const ideaChip = (it) => '<span class="ichip ' + it.kind + '"><i></i><span>' + esc(it.statusKey ? IDEA_KIND[it.statusKey] : (it.status || "—")) + '</span></span>';
   function renderIdeas() {
     const box = $("ideas"), I = ideaSetOf(state.view);
     if (!I || I.error) {

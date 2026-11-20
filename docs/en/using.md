@@ -13,7 +13,7 @@ The menu is on the left, the chosen section on the right. **Ideas**, **Our servi
 
 ## Overview and groups
 
-**Overview** shows all projects (except the personal-growth group `Развитие`): counts by status, stage moves in the period, average progress, activity by day, progress of each project and where your attention went. The **Day summary** card shows the assistant's summary of today, if you asked for one (see [Proposals](#proposals-and-requests-to-the-assistant)).
+**Overview** opens with status tiles for project totals, in-progress, paused and stopped projects, stage moves, and average progress. A short **Needs attention** block follows the tiles and comes before the project list and its group filters. Each row shows the project, alert reason, current and next stage, and last movement; open the project for its full stages and history. When a linked HQ proposal is available, its details and **To the day plan** action are shown there. **Day Plan** is also directly available from this block. Activity by day, Project progress, and Where attention goes remain on the same Overview. Use **Charts** in Needs attention to jump to the charts without scrolling through a long project list. The **Day summary** card shows the assistant's summary of today, if you asked for one (see [Proposals](#proposals-and-requests-to-the-assistant)).
 
 The arrow on the right of a big card collapses it to one line; the program remembers this after a restart.
 
@@ -34,7 +34,7 @@ An alert appears when:
 | Weekly report not pushed | two days after the week ended, the report is still not on `origin/main` |
 | Decisions waiting | ideas with the status «решение» wait more than 30 days |
 
-Each alert has buttons: **Repair** (you are on it: the alert stays visible but is not counted), **Remove** (hide it; it comes back if the situation changes, for example the number of carry-overs grows), **Restore**, and **To the day plan** (adds a task for today).
+The **Alerts** section lists active alerts before event history and statistics. Each alert keeps its reason, related project, and actions together. **Repair** marks work in progress; **Remove** hides the alert; **Restore** brings a dismissed alert back; **To the day plan** adds a task for today. Use the Alerts menu entry from any Overview position: it opens at the top of the alerts list. A linked project row on Overview provides its current and next stage and a route to the project details.
 
 ## Day plan
 
@@ -67,7 +67,7 @@ Week, month, quarter (by weeks) and year (by months): day-plan tasks and how man
 ## Research, reports, digests
 
 - **Research**: entries your assistant prepared, each in three languages, with its source documents.
-- **Reports**: weekly and monthly reports. If a report has a data file, the window shows its figures and charts by category, and arrows compare it with the previous report; **Original** shows the Markdown text. In the «Risks» and «Proposals» categories every item has **To the day plan**. **Show in folder** opens the file in Explorer.
+- **Reports**: weekly and monthly reports. If a report has a data file, the window shows its figures and charts by category, and arrows compare it with the previous report; **Original** shows the Markdown text. In the «Risks» and «Proposals» categories every item has **To the day plan**. **Show in folder** opens the file in Explorer. On Overview, **Save report** opens the print dialog for the current view; check the preview and choose **Save as PDF** if you want a copy.
 - **Digests** (if configured): daily news digests; mark items «interesting» or «useful». The **Interesting** and **Useful** tabs collect the marked items of all days, with a topic and a period filter. The buttons **Collect the interesting**, **Collect the useful** and **Ideas for your projects** ask the assistant for a collection of the chosen period (like the requests below); the answer on a collection appears on its tab, ideas in **Proposals**.
 
 ## Proposals and requests to the assistant

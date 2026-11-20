@@ -16,9 +16,9 @@
 ## 1. Install and first start
 
 1. Install Python 3.10 or newer from [python.org](https://www.python.org/downloads/) (keep the option that installs the `py` launcher).
-2. Put XControlP in a folder of your own, for example `C:\Users\<you>\XControlP` (`git clone` or **Download ZIP**).
+2. Put XControlP in a folder of your own, for example `C:\Users\<you>\XControlP` (`git clone` or **Download ZIP**). Keep your data in that folder; do not replace it with a fresh copy.
 3. Double-click `create_shortcut.pyw`: it creates the desktop shortcut **XControlP**. If it cannot, it writes the reason to `shortcut-error.txt`.
-4. Open the shortcut.
+4. Open the shortcut. Before installing a new release, review its version and notes in **Settings → Updates**. After the first start or an update restart, check Overview, Alerts, Day Plan, settings, and any empty sections you use.
 
 What happens at start:
 
@@ -260,11 +260,13 @@ The week in the window starts on Sunday.
 
 ## 9. Updating XControlP
 
-With git: `git pull` in the folder. Without git: download the new version and replace the program files (section 2, «the program»). Your data files are not part of XControlP and are not touched either way. Close the window first.
+Before updating, make a copy of your XControlP data folder and close the window. Keep that copy until you have checked the updated dashboard.
 
-**The update check in the program** (for a git clone). Turn it on in **Settings** → **Updates**. Use **Check now** to check immediately. The program also checks at startup and when you sync data. Git fetches the tracked source branch (the configured `upstream` for a fork), and `pult/release.json` is the sole source of announcements. A ready release needs a higher `version` and a matching entry with nonempty notes in `releases`. Ordinary commits and other files do not announce a release. The check is off by default.
+For a git clone, use **Settings → Updates → Check now** to review a ready release. Git fetches the tracked source branch (the configured `upstream` for a fork); `pult/release.json` is the only release announcement. A higher `version` must have a matching entry with nonempty notes in `releases`. Ordinary commits and changes to other files do not announce a release. Updates are off by default.
 
-**Review before updating.** The Updates tab shows the new version and its notes before the **Update the program** button. That button approves the commit that published the announcement on the source branch. If the offer changes, review the new notes and confirm again. Installation uses `git merge --ff-only --no-overwrite-ignore` and stops if tracked program files have local edits or the release would overwrite your data. Restart the program after installing. To announce a release, update the version and its notes in `pult/release.json` once the release is ready. Write short notes for English, Russian, and Hebrew.
+The Updates tab shows the version and notes before **Update the program**. That action approves the exact commit that announced the release. If the offer changes before installation, review the new notes and confirm again. Installation uses `git merge --ff-only --no-overwrite-ignore`; it stops for local edits to tracked program files or if the update would overwrite your data. Restart XControlP after the update, then check Overview, Alerts, Day Plan, settings, and reports.
+
+For a manual copy, close XControlP and copy your data folder first. Replace only the program files from the approved release while preserving your data files. To return to a previous version, follow [ROLLBACK.md](../../ROLLBACK.md); do not reset or overwrite the only copy of your data. Update announcements require a ready release with short notes in English, Russian, and Hebrew in `pult/release.json`.
 
 ## 10. When something does not work
 

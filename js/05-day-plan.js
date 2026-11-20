@@ -90,11 +90,11 @@
     const D = state.day.data;
     return !!(D && D.day === dayKey(today()) && (D.items || []).some((i) => i.status !== "removed" && String(i.note || "").indexOf(planTag(src)) >= 0));
   }
-  function planBtn(src, title, project, from) {
+  function planBtn(src, title, project, from, primary) {
     if (!dpServer()) return "";
     if (planHas(src)) return '<span class="plan-in">✓ ' + esc(tl("уже в плане")) + '</span>';
     PLAN.req[src] = { title, project, from };
-    return '<button type="button" class="albtn plan-btn" data-plan="' + esc(src) + '">' + esc(tl("В план дня")) + '</button>';
+    return '<button type="button" class="albtn plan-btn' + (primary ? ' al-primary' : '') + '" data-plan="' + esc(src) + '">' + esc(tl("В план дня")) + '</button>';
   }
   async function planAdd(src, el) {
     const q = PLAN.req[src];
@@ -125,12 +125,15 @@
   function dpItemHtml(it, n) {
     const p = it.project_id ? dpProject(it.project_id) : null;
     const pname = p ? p.name : td(it.project_name || "");
+    const fromHq = STAGE3_LAYOUT === "projects-first" && (String(it.note || "").includes("[pr:") || String(it.note || "").includes("Из предложений штаба"));
+    const displayNote = fromHq ? String(it.note || "").replace("Из предложений штаба", "").replace(/\s*\[pr:[^\]]+\]/, "").trim() : String(it.note || "");
     const what = it.kind === "stage" ? tl("Этап ") + (it.stage_index + 1) + ": " + tdt(it.title) : tdt(it.title);
     const hidden = it.status === "moved" || it.status === "removed";
     const open = state.day.noteOpen === it.id;
     let html = '<div class="dp-item st-' + esc(it.status) + ' pr-' + esc(it.priority) + '" data-item="' + esc(it.id) + '">' +
       '<div class="dp-num">' + (hidden ? "" : n) + '</div><div class="dp-body"><div class="dp-what">' +
       (pname ? '<span class="dp-proj" data-open="' + esc(it.project_id) + tl('" title="Этапы проекта">') + esc(pname) + '</span>' : "") +
+      (fromHq ? '<span class="dp-source">' + esc(tl("Предложение штаба")) + '</span>' : "") +
       '<span class="dp-kind">' + esc(DP_KIND[it.kind]) + '</span><span class="dp-title">' + esc(what) + '</span>' +
       (it.priority !== "normal" ? '<span class="dp-prio ' + esc(it.priority) + '">' + esc(DP_PRIO[it.priority]) + '</span>' : "") +
       (it.added_by === "claude" ? tl('<span class="dp-by" title="Добавил Claude">Claude</span>') : "") + '</div>';
@@ -139,8 +142,8 @@
     if (it.status === "moved") meta.push(tl("перенесено на ") + dpShort(it.moved_to_day));
     if (it.status === "removed") meta.push(tl("убрано"));
     if (meta.length) html += '<div class="dp-meta">' + esc(meta.join(" · ")) + '</div>';
-    if (it.note && !open) html += '<div class="dp-note">' + esc(it.note) + '</div>';
-    if (open) html += '<div class="dp-noteedit"><textarea id="dp-note-' + esc(it.id) + tl('" rows="2" maxlength="2000" placeholder="Что получилось, что осталось">') + esc(it.note) + '</textarea>' +
+    if (displayNote && !open) html += '<div class="dp-note">' + esc(displayNote) + '</div>';
+    if (open) html += '<div class="dp-noteedit"><textarea id="dp-note-' + esc(it.id) + tl('" rows="2" maxlength="2000" placeholder="Что получилось, что осталось">') + esc(displayNote) + '</textarea>' +
       '<button type="button" class="cal-btn primary" data-dp="note-save:' + esc(it.id) + tl('">Сохранить</button>') +
       tl('<button type="button" class="cal-btn" data-dp="note-cancel">Отмена</button></div>');
     html += '</div>';
@@ -150,7 +153,7 @@
       html += '<div class="dp-acts"><button type="button" class="cal-btn" data-dp="restore:' + esc(it.id) + tl('">Вернуть</button></div>');
     } else {
       html += tl('<div class="dp-ctl"><div class="dp-status" role="group" aria-label="Выполнение">') + DP_STATUS.map(([s, icon, label]) =>
-        '<button type="button" class="dp-st ' + s + (it.status === s ? " on" : "") + '" data-dp="st:' + esc(it.id) + ':' + s + '" aria-pressed="' + (it.status === s) +
+        '<button type="button" class="dp-st ' + s + (it.status === s ? " on" : "") + (s === "done" && it.status !== "done" ? " primary" : "") + '" data-dp="st:' + esc(it.id) + ':' + s + '" aria-pressed="' + (it.status === s) +
         '" title="' + label + '"><span>' + icon + '</span>' + label + '</button>').join("") + '</div>' +
         '<div class="dp-acts">' +
         '<button type="button" class="dp-ic" data-dp="up:' + esc(it.id) + tl('" title="Выше в очереди" aria-label="Выше">↑</button>') +
@@ -252,6 +255,7 @@
       '<input type="date" class="dp-date" value="' + esc(key) + tl('" aria-label="Перейти к дню">') +
       '<button type="button" class="cal-btn" data-dp="review">' + tl("Закрыть день") + '</button>' +
       (sum && sum.total ? tl('<span class="dp-sum">Сделано ') + sum.counts.done + (sum.counts.partial ? tl(", частично ") + sum.counts.partial : "") + tl(' из ') + sum.total + ' · <b>' + sum.percent + '%</b></span>' : "") + '</div>';
+    const incoming = STAGE3_LAYOUT === "projects-first" ? dpIncomingHtml() : "";
     let main;
     if (!dpServer()) {
       main = tl('<div class="card"><div class="empty">План дня работает, когда Пульт открыт ярлыком «XControlP» на рабочем столе (через программу Пульта).</div></div>');
@@ -268,14 +272,66 @@
         tl('<textarea id="dp-daynote" rows="3" maxlength="4000" placeholder="Например: урок английского сделан, отчёт — завтра">') + esc(D.note || "") + '</textarea>' +
         tl('<button type="button" class="cal-btn" data-dp="daynote">Сохранить итог</button></div></div>');
     }
-    box.innerHTML = bar + (S.err ? '<div class="cal-hint dp-err">' + esc(S.err) + tl('<button type="button" class="cal-btn" data-dp="reload">Обновить</button></div>') : "") +
-      '<div class="dp-cols"><div class="dp-main">' + main + '</div><div class="dp-side">' +
+    box.innerHTML = (STAGE3_LAYOUT === "working-day" ? renderWorkingDayIntro(D, items) : "") + bar + (S.err ? '<div class="cal-hint dp-err">' + esc(S.err) + tl('<button type="button" class="cal-btn" data-dp="reload">Обновить</button></div>') : "") +
+      '<div class="dp-cols"><div class="dp-main">' + main + incoming + '</div><div class="dp-side">' +
       (dpServer() ? dpFormHtml() : "") + dpClaudeHtml(D) + dpCalendarHtml(key) + (D ? dpRecentHtml(D) : "") + '</div></div>' +
       tl('<div class="cal-note">Этапы проектов на Пульте план дня не двигает — их передвигает штаб. Задачи не удаляются: «убрать» можно вернуть.</div>');
     if (focus) {
       const el = document.getElementById(focus);
       if (el) { el.focus(); if (caret && "setSelectionRange" in el) try { el.setSelectionRange(caret[0], caret[1]); } catch (err) { /* select */ } }
     }
+  }
+
+  function dpIncomingHtml() {
+    const rows = [];
+    (board.answers || []).forEach((a) => (a.data && Array.isArray(a.data.proposals) ? a.data.proposals : []).forEach((p) => {
+      const key = prKey(a, p), mark = prMark(key);
+      if (mark && mark.state === "declined") return;
+      if (mark && mark.state === "accepted" && !planHas("pr:" + key)) return;
+      const project = p.project ? dpProject(p.project) : null;
+      rows.push('<article class="dp-hq-proposal"><div class="dp-hq-copy"><div class="dp-hq-source">' + esc(tl("Предложение штаба")) + '</div>' +
+        '<b>' + esc(rpT(p.text)) + '</b>' + (project ? '<span class="dp-proj-name">' + esc(project.name) + '</span>' : "") +
+        (p.why ? '<p>' + esc(rpT(p.why)) + '</p>' : "") + '</div><div class="albtns">' +
+        planBtn("pr:" + key, rpT(p.text), project ? project.id : "", tl("Из предложений штаба"), true) +
+        '<button type="button" class="albtn" data-goto="proposals">' + esc(tl("Открыть предложение")) + '</button></div></article>');
+    }));
+    return rows.length ? '<section class="card dp-incoming"><div class="dp-head"><h2>' + esc(tl("Входящие предложения штаба")) + '</h2><button type="button" class="svc-btn" data-goto="proposals">' + esc(tl("Предложения")) + '</button></div>' +
+      '<div class="dp-hq-list">' + rows.join("") + '</div></section>' : "";
+  }
+
+  function renderWorkingDayIntro(D, items) {
+    const projects = board.projects.filter((p) => p.group !== DEV), focus = projects.find((p) => p.id === board.focus) || projects.find((p) => p.status === "work");
+    const list = dpVisible(items), next = list.find((it) => it.status !== "done"), preview = list.slice(0, 2);
+    const taskSummary = preview.length ? preview.map((it) => '<li>' + esc(tdt(it.title)) + (it.project ? ' <span>· ' + esc(dpProject(it.project)?.name || it.project) + '</span>' : '') + '</li>').join("")
+      : '<li class="wd-empty">' + esc(tl("На сегодня задач нет")) + '</li>';
+    const proposals = [];
+    (board.answers || []).forEach((a) => (a.data && Array.isArray(a.data.proposals) ? a.data.proposals : []).forEach((p) => {
+      const mark = prMark(prKey(a, p));
+      if (!mark || (mark.state !== "accepted" && mark.state !== "declined")) proposals.push({ p, key: prKey(a, p) });
+    }));
+    const proposalRows = proposals.length ? proposals.map(({ p, key }) => {
+      const project = p.project ? board.projects.find((x) => x.id === p.project) : null;
+      return '<article class="wd-proposal"><div><b>' + esc(rpT(p.text)) + '</b>' + (project ? '<div class="pgroup">' + esc(tl("Проект")) + ': ' + esc(project.name) + '</div>' : "") +
+        (p.why ? '<div class="pr-why">' + esc(rpT(p.why)) + '</div>' : "") + '</div><div class="albtns">' +
+        planBtn("pr:" + key, rpT(p.text), project ? project.id : "", tl("Из предложений штаба")) +
+        '<button type="button" class="albtn" data-goto="proposals">' + esc(tl("Открыть предложение")) + '</button></div></article>';
+    }).join("") : '<div class="empty">' + esc(tl("Входящих предложений пока нет")) + '</div>';
+    const filtered = stage3Projects(projects), compact = filtered.slice(0, 4).map((p) => '<button type="button" class="wd-project" data-open="' + esc(p.id) + '"><b>' + esc(p.name) + '</b>' +
+      '<span>' + esc(p.stages[p.current] || "—") + ' → ' + esc(p.stages[p.current + 1] || "—") + '</span></button>').join("");
+    const focusHtml = focus ? '<button type="button" class="wd-focus" data-open="' + esc(focus.id) + '"><span>' + esc(tl("Фокусный проект")) + '</span><b>' + esc(focus.name) + '</b><small>' +
+      esc(focus.stages[focus.current] || "—") + ' → ' + esc(focus.stages[focus.current + 1] || tl("Следующий шаг не определён")) + '</small>' +
+      (focus.days == null ? "" : '<small>' + esc(tl("Последнее движение")) + ': ' + esc(daysText(focus.days)) + '</small>') +
+      (alertsOf(focus).length ? '<small class="wd-alert-reason">' + esc(alertsOf(focus)[0].text) + '</small>' : "") + '</button>' :
+      '<div class="wd-focus"><span>' + esc(tl("Фокусный проект")) + '</span><b>' + esc(tl("Проектов пока нет")) + '</b></div>';
+    return '<section class="wd-intro" aria-label="' + esc(tl("Рабочий день")) + '"><div class="wd-topcards">' +
+      '<article class="card wd-task-summary"><h2>' + esc(tl("Задачи на сегодня")) + ' <span class="wd-count">' + list.length + '</span></h2><ul>' + taskSummary + '</ul></article>' +
+      '<article class="card wd-next"><h2>' + esc(tl("Следующее действие")) + '</h2><b>' + esc(next ? tdt(next.title) : tl("На сегодня задач нет")) + '</b>' +
+      (next && next.project ? '<span>' + esc(dpProject(next.project)?.name || next.project) + '</span>' : "") + '</article>' + focusHtml + '</div>' +
+      '<section class="card wd-incoming"><div class="pf-section-head"><h2>' + esc(tl("Входящие предложения штаба")) + '</h2><button type="button" class="svc-btn" data-goto="proposals">' + esc(tl("Предложения")) + '</button></div>' +
+      '<div class="wd-proposals">' + proposalRows + '</div></section>' +
+      '<section class="card wd-projects"><div class="pf-section-head"><h2>' + esc(tl("Проекты")) + '</h2><div class="wd-shortcuts">' +
+      '<button type="button" class="svc-btn" data-goto="all">' + esc(tl("Все проекты")) + '</button><button type="button" class="svc-btn" data-goto="alerts">' + esc(tl("Тревоги")) + '</button></div></div>' +
+      stage3Groups(projects, "working-day") + '<div class="wd-project-list">' + (compact || '<div class="empty">' + esc(tl("Здесь нет проектов")) + '</div>') + '</div></section></section>';
   }
 
   function dpOrder(ids) { return dayPost([{ op: "order", day: dpKey(), ids }]); }
@@ -298,7 +354,10 @@
     if (cmd === "note-cancel") { S.noteOpen = ""; return renderDay(); }
     if (cmd === "note-save") {
       const t = document.getElementById("dp-note-" + arg);
-      if (await dayPost([{ op: "note", id: arg, note: t ? t.value : "" }])) { S.noteOpen = ""; renderDay(); }
+      let note = t ? t.value : "";
+      const current = D && D.items.find((it) => it.id === arg), tag = current && String(current.note || "").match(/\[pr:[^\]]+\]/);
+      if (tag) note = (note.trim() ? note.trim() + " " : "") + tag[0];
+      if (await dayPost([{ op: "note", id: arg, note }])) { S.noteOpen = ""; renderDay(); }
       return;
     }
     if (cmd === "daynote") { const t = $("dp-daynote"); return dayPost([{ op: "day_note", day: dpKey(), note: t ? t.value : "" }]); }

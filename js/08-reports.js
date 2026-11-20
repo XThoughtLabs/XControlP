@@ -241,7 +241,7 @@
       showSync("bad", tl(summary ? "Скрытие сводки не запомнилось" : "Закрытие сообщения не запомнилось"), [["err", esc(String(err && err.message || err))]]);
     }
   }
-  const prOpen = () => prAnswers().reduce((n, a) => n + (a.data && Array.isArray(a.data.proposals) ? a.data.proposals.filter((p) => !prMark(prKey(a, p))).length : 0), 0);
+  const prOpen = (answers = prAnswers()) => answers.reduce((n, a) => n + (a.data && Array.isArray(a.data.proposals) ? a.data.proposals.filter((p) => !prMark(prKey(a, p))).length : 0), 0);
   function prSnapshot() {
     const key = dayKey(today()), D = state.day.data && state.day.data.day === key ? state.day.data : null;
     const alerts = sysAlerts().concat(...board.projects.map((p) => alertsOf(p)));
@@ -294,7 +294,7 @@
       const key = prKey(a, p), st = (prMark(key) || {}).state || "", proj = p.project ? board.projects.find((x) => x.id === p.project) : null;
       const btns = st === "declined" ? '<span class="pr-st">' + esc(tl("отклонено")) + '</span><button type="button" class="albtn" data-pr="active:' + esc(key) + '">' + esc(tl("Вернуть")) + '</button>'
         : st === "accepted" ? '<span class="plan-in">✓ ' + esc(tl("уже в плане")) + '</span>'
-        : planBtn("pr:" + key, rpT(p.text), proj ? proj.id : "", tl("Из предложений штаба")) +
+        : planBtn("pr:" + key, rpT(p.text), proj ? proj.id : "", tl("Из предложений штаба"), true) +
           (dpServer() ? '<button type="button" class="albtn" data-pr="declined:' + esc(key) + '">' + esc(tl("Отклонить")) + '</button>' : "");
       return '<li class="pr-item' + (st ? " pr-" + st : "") + '"><div>' + mdInline(rpT(p.text)) + (proj ? ' <span class="pr-proj">· ' + esc(proj.name) + '</span>' : "") + '</div>' +
         (p.why ? '<div class="pr-why">' + mdInline(rpT(p.why)) + '</div>' : "") + '<div class="albtns">' + btns + '</div></li>';
@@ -318,12 +318,30 @@
   }
   function renderProposals() {
     const waiting = prWaiting().filter((r) => !PR_SECTION.summary.concat(PR_SECTION.digest).includes(r.kind)), answers = prOther();
+    const byKind = (items, kindOf) => {
+      const groups = new Map();
+      items.forEach((item) => {
+        const kind = kindOf(item) || "proposals";
+        if (!groups.has(kind)) groups.set(kind, []);
+        groups.get(kind).push(item);
+      });
+      return groups;
+    };
+    const waitingHtml = Array.from(byKind(waiting, (r) => r.kind), ([kind, items]) =>
+      '<section class="pr-wait-group"><h3>' + esc(prKindName(kind)) + ' · ' + items.length + '</h3><ul class="pr-wait">' +
+        items.map((r) => '<li>⏳ ' + esc(stamp(r.created)) + ' — ' + esc(tl("ждёт разбора в чате штаба")) + '</li>').join("") + '</ul></section>').join("");
+    const answersHtml = Array.from(byKind(answers, (a) => a.data && a.data.kind), ([kind, items]) => {
+      const openCount = prOpen(items);
+      return '<section class="pr-purpose"><div class="pf-section-head"><h2>' + esc(prKindName(kind)) + '</h2>' +
+        (openCount ? '<span class="wd-count">' + openCount + '</span>' : '') + '</div>' +
+        items.map(prAnswerHtml).join("") + '</section>';
+    }).join("");
     prSeen("proposals");
     $("ideas").innerHTML = '<div class="card"><div class="rp-head"><h2>' + esc(tl("Запросы штабу")) + '</h2><span class="rp-tools">' + prButtons() +
       '<button type="button" class="svc-btn" data-prq="load">' + esc(tl("Загрузить предложения")) + '</button></span></div>' +
       '<p class="sub">' + esc(tl("Кнопка запроса кладёт снимок Пульта в папку «requests». Напишите в чате штаба «разбери запрос» — ответ штаба появится здесь.")) + '</p>' +
-      (waiting.length ? '<ul class="pr-wait">' + waiting.map((r) => '<li>⏳ ' + esc(stamp(r.created)) + ' · ' + esc(prKindName(r.kind)) + ' — ' + esc(tl("ждёт разбора в чате штаба")) + '</li>').join("") + '</ul>' : "") + '</div>' +
-      (answers.length ? answers.map(prAnswerHtml).join("") : '<div class="card"><div class="empty">' + esc(tl("Ответов штаба пока нет")) + '</div></div>');
+      (waiting.length ? '<div class="pr-wait-groups">' + waitingHtml + '</div>' : "") + '</div>' +
+      (answers.length ? '<div class="pr-purposes">' + answersHtml + '</div>' : '<div class="card"><div class="empty">' + esc(tl("Ответов штаба пока нет")) + '</div></div>');
   }
   function renderHqDay() {
     const el = $("hqday");

@@ -1,18 +1,18 @@
 [
  {
-  "bytes": 46614,
+  "bytes": 46823,
   "method": "GET",
   "path": "/",
-  "sha256": "74bb71041eb5d5f2b03cb7a74e276600643c7499ae4f5aa9819a3061a5cd1288",
+  "sha256": "2f9e5a36cb3410e421d626cf2a3341fc4359ba0f24e613458ab49aa00e4d3e07",
   "status": 200,
   "step": "G01",
   "type": "text/html; charset=utf-8"
  },
  {
-  "bytes": 46614,
+  "bytes": 46823,
   "method": "GET",
   "path": "/index.html",
-  "sha256": "74bb71041eb5d5f2b03cb7a74e276600643c7499ae4f5aa9819a3061a5cd1288",
+  "sha256": "2f9e5a36cb3410e421d626cf2a3341fc4359ba0f24e613458ab49aa00e4d3e07",
   "status": 200,
   "step": "G02",
   "type": "text/html; charset=utf-8"
@@ -21,16 +21,16 @@
   "bytes": 13317,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "d3e4287c36a111040dc07965f3725de89422fd559142920981e8a96ace76614c",
+  "sha256": "0712917d5d08da510be7c11c68cc9c1a5d57ff3761d5fdb57597fa26f6cb2266",
   "status": 200,
   "step": "G03",
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 136839,
+  "bytes": 140112,
   "method": "GET",
   "path": "/i18n.js",
-  "sha256": "1997bc5f4d6896858d34e73fc6883a32ef83722fdf523fdcb8d07cd40251a640",
+  "sha256": "c91e27acf4b98db8f51ab0f232dcd8078a1facf44c6805a5f9614a36c3a03254",
   "status": 200,
   "step": "G04",
   "type": "text/javascript; charset=utf-8"
@@ -151,19 +151,19 @@
   "type": "text/html;charset=utf-8"
  },
  {
-  "bytes": 74049,
+  "bytes": 89332,
   "method": "GET",
   "path": "/css/pult.css",
-  "sha256": "061e9637ddef81cc6365aa27eb60996a4ec3525a9e3cef74707319f556fe0ab3",
+  "sha256": "a11cfb53dcb53285735c85bc67109cebefa2915b023fa62e3f0384c6e3ab603a",
   "status": 200,
   "step": "G18",
   "type": "text/css; charset=utf-8"
  },
  {
-  "bytes": 61117,
+  "bytes": 69564,
   "method": "GET",
   "path": "/js/01-core.js",
-  "sha256": "3fc6dbd4526c4323ac52aa11b67a898fe8cf4dbe9be46bab32cb4c019bf172d4",
+  "sha256": "51b3825c4f2a48708a124a8a676a3621399c5b6a5e87848979c8417cc05fcd99",
   "status": 200,
   "step": "G19",
   "type": "text/javascript; charset=utf-8"
@@ -178,10 +178,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 21150,
+  "bytes": 21161,
   "method": "GET",
   "path": "/js/03-performance.js",
-  "sha256": "edbe31bbd32f981cbf5724a17963257c4df0c28f4efe3afa3d9c2d68ed0765e9",
+  "sha256": "1b548fe63151eeee3cfdb0308ac9121b79613547786350c4edaf270b52877944",
   "status": 200,
   "step": "G21",
   "type": "text/javascript; charset=utf-8"
@@ -196,10 +196,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 28097,
+  "bytes": 35005,
   "method": "GET",
   "path": "/js/05-day-plan.js",
-  "sha256": "043147ca907e9b4e8d192d4c3750ab94a5d7616060dfc6bbb8ebe7f0120b2654",
+  "sha256": "0e23a517b250743f9ae8011f59ef89a3066ce24e5f60de5ffc522c0ed550253f",
   "status": 200,
   "step": "G23",
   "type": "text/javascript; charset=utf-8"
@@ -223,10 +223,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 34847,
+  "bytes": 35822,
   "method": "GET",
   "path": "/js/08-reports.js",
-  "sha256": "47f601968f86e78f944208f16fa42681fa0b7311dbe6dd0b8af70a9e1ed76c97",
+  "sha256": "771804f105a91e17af031615f23809190621f1250e4e8ec8befbaf4362d179a6",
   "status": 200,
   "step": "G26",
   "type": "text/javascript; charset=utf-8"
@@ -241,10 +241,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 37124,
+  "bytes": 38602,
   "method": "GET",
   "path": "/js/10-settings.js",
-  "sha256": "03e08851091a032bade124cc80b65f36e4a610474bb0de781387de694e5765c7",
+  "sha256": "4da5229db29f34132472ab09d292c442f15afc54d4ab1ee9f6d4f6e9e273db22",
   "status": 200,
   "step": "G28",
   "type": "text/javascript; charset=utf-8"
@@ -505,7 +505,7 @@
   "bytes": 13554,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "6c9bde39174272a449f39cd07d09ca0514f2c45d0159640ae152af9cc08885ef",
+  "sha256": "928a4e0ee435e43133f0862f87e059dfc929654ebe34203165546c1fb050e8c2",
   "status": 200,
   "step": "S17",
   "type": "text/javascript; charset=utf-8"

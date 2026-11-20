@@ -161,6 +161,12 @@
     if (!board) return;
     if (state.view === "idea-stats" && !board.ideaSets.length) state.view = "all";
     if (String(state.view).startsWith("ideas") && !ideaSetOf(state.view)) state.view = "all";
+    $("app").classList.toggle("alerts-view", state.view === "alerts");
+    $("app").classList.toggle("stage4-reference-view", STAGE3_LAYOUT === "projects-first" && ["all", "alerts", "day"].includes(state.view));
+    const projectsFirstView = STAGE3_LAYOUT === "projects-first" && state.view === "all";
+    $("app").classList.toggle("projects-first-view", projectsFirstView);
+    $("app").classList.toggle("working-day-view", STAGE3_LAYOUT === "working-day" && state.view === "day");
+    $("stage3").hidden = !projectsFirstView;
     const insightView = state.view === "perf" || state.view === "idea-stats";
     const calView = state.view === "calendar";
     const dayView = state.view === "day";
@@ -245,7 +251,13 @@
       $("title").textContent = viewName;
       $("subtitle").textContent = tl("Обновлено: ") + fmt(board.updated) + (board.sync && board.sync.synced ? tl(" · синхронизировано ") + stamp(board.sync.synced) : "") +
         tl(" · сегодня ") + fmt(today()) + tl(" · проектов на экране: ") + list.length;
-      renderHqDay(); renderTiles(list); renderActivity(list); renderProgress(list); renderShare(list); renderTable(list); renderFeed(list);
+      if (projectsFirstView) {
+        $("subtitle").textContent = tl("Текущий и следующий этап · причина тревоги · последний переход");
+        renderHqDay(); renderTiles(list); renderActivity(list); renderProgress(list); renderShare(list);
+        renderProjectsFirst(list);
+      } else {
+        renderHqDay(); renderTiles(list); renderActivity(list); renderProgress(list); renderShare(list); renderTable(list); renderFeed(list);
+      }
     }
     if (drawer.open) renderDrawer();
     foldCards();
@@ -379,7 +391,17 @@
     const pr = e.target.closest("[data-pr]");
     if (pr && !pr.disabled) { const i = pr.dataset.pr.indexOf(":"); prMarkSet(pr.dataset.pr.slice(i + 1), pr.dataset.pr.slice(0, i), pr); return; }
     const gt = e.target.closest("[data-goto]");
-    if (gt) { state.view = gt.dataset.goto; history.replaceState(null, "", "#" + encodeURIComponent(state.view)); render(); return; }
+    if (gt) {
+      const nextView = gt.dataset.goto;
+      if (nextView === "alerts" && state.view !== "alerts") window.scrollTo(0, 0);
+      state.view = nextView; history.replaceState(null, "", "#" + encodeURIComponent(state.view)); render(); return;
+    }
+    const jump = e.target.closest("[data-scroll-to]");
+    if (jump) {
+      const target = $(jump.dataset.scrollTo);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     const pl = e.target.closest("[data-plan]");
     if (pl && !pl.disabled) { planAdd(pl.dataset.plan, pl); return; }
     const sd = e.target.closest("[data-svcdel]");
@@ -401,11 +423,17 @@
     const dg = e.target.closest("[data-dg]");
     if (dg && !dg.disabled) { digestAction(dg.dataset.dg, dg); return; }
     const b = e.target.closest("nav button");
-    if (b) { state.view = b.dataset.view; history.replaceState(null, "", "#" + encodeURIComponent(state.view)); render(); return; }
+    if (b) {
+      const nextView = b.dataset.view;
+      if (nextView === "alerts" && state.view !== "alerts") window.scrollTo(0, 0);
+      state.view = nextView; history.replaceState(null, "", "#" + encodeURIComponent(state.view)); render(); return;
+    }
     const g = e.target.closest("[data-goto]");
     if (g) { state.view = g.dataset.goto; history.replaceState(null, "", "#" + encodeURIComponent(state.view)); render(); return; }
     const f = e.target.closest("[data-filter]");
     if (f) { state.ideaFilter = f.dataset.filter; renderIdeas(); return; }
+    const pg = e.target.closest("[data-pgroup]");
+    if (pg) { state.projectGroup = pg.dataset.pgroup; render(); return; }
     const o = !drawer.contains(e.target) && e.target.closest("[data-open]");
     if (o) openStages(o.dataset.open);
   });

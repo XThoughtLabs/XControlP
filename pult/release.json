@@ -1,6 +1,26 @@
 {
- "version": "1.0.02",
+ "version": "1.0.03",
  "releases": [
+  {
+   "version": "1.0.03",
+   "notes": {
+    "en": [
+     "Overview now opens with project status tiles and a Needs attention block above the project list, with a direct route to charts and Day Plan.",
+     "Project context makes alert reasons, current and next stages, and linked HQ proposals easier to review and act on.",
+     "Alerts keep active items before history, and Overview and reports are available in clearer print views."
+    ],
+    "ru": [
+     "Обзор открывается сводными плитками и блоком «Требует внимания» перед списком проектов; из него доступны графики и План дня.",
+     "В контексте проекта видны причины тревог, текущий и следующий этапы и связанные предложения штаба.",
+     "Активные тревоги стоят перед историей; Обзор и отчёты удобнее просматривать в печатном виде."
+    ],
+    "he": [
+     "הסקירה נפתחת באריחי מצב פרויקטים ובאזור «דורש תשומת לב» לפני רשימת הפרויקטים, עם גישה ישירה לגרפים ולתוכנית היום.",
+     "בהקשר של הפרויקט קל יותר לבדוק את סיבות ההתראות, השלב הנוכחי והבא והצעות קשורות מהמטה.",
+     "ההתראות הפעילות מופיעות לפני ההיסטוריה; קל יותר לצפות בסקירה ובדוחות בתצוגת הדפסה."
+    ]
+   }
+  },
   {
    "version": "1.0.02",
    "notes": {

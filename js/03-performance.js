@@ -153,7 +153,7 @@
     const stages = p.stages.map((s, i) => {
       const kind = i < p.current ? "done" : i === p.current ? "now" : "ahead";
       const mark = kind === "done" ? "✓" : "";
-      const tag = kind === "done" ? tl("пройден") : kind === "now" ? tl("СЕЙЧАС") : i === p.current + 1 ? tl("следующий") : "";
+      const tag = kind === "done" ? tl("пройден") : kind === "now" ? tl("Текущий этап") : i === p.current + 1 ? tl("следующий") : "";
       return '<li class="st ' + kind + '"' + (kind === "now" ? ' aria-current="step"' : "") + '><span class="num">' + (i + 1) + '</span><span class="dot" aria-hidden="true">' + mark +
         '</span><span class="txt">' + esc(s) + '</span><span class="tag">' + tag + '</span></li>';
     }).join("");
