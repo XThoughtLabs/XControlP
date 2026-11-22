@@ -18,19 +18,19 @@
   "type": "text/html; charset=utf-8"
  },
  {
-  "bytes": 13317,
+  "bytes": 13414,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "0712917d5d08da510be7c11c68cc9c1a5d57ff3761d5fdb57597fa26f6cb2266",
+  "sha256": "12be1ce80e00410325edd06ca59e950e1345ce81a3ef533a7021da0597771b35",
   "status": 200,
   "step": "G03",
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 140112,
+  "bytes": 143699,
   "method": "GET",
   "path": "/i18n.js",
-  "sha256": "c91e27acf4b98db8f51ab0f232dcd8078a1facf44c6805a5f9614a36c3a03254",
+  "sha256": "793c836e31d97ac15e03886c78c7644c2ca0ff307d0ef8940e0078eeb937ba79",
   "status": 200,
   "step": "G04",
   "type": "text/javascript; charset=utf-8"
@@ -79,21 +79,21 @@
   "type": "text/html;charset=utf-8"
  },
  {
-  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [], \"summary\": [], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"applied\": []}",
-  "bytes": 191,
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [], \"proposal_sources\": [], \"summary\": [], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"applied\": []}",
+  "bytes": 215,
   "method": "GET",
   "path": "/day.json?day=2026-01-15",
-  "sha256": "96e356739f15fe1d19b126592c29a30c384b21a42fe3393a7d17d98e82c75735",
+  "sha256": "0d354ad31e6f50e03ef1465cb45cab7527123286119a643875c460c007e53fea",
   "status": 200,
   "step": "G10",
   "type": "application/json; charset=utf-8"
  },
  {
-  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [], \"summary\": [], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"applied\": []}",
-  "bytes": 191,
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [], \"proposal_sources\": [], \"summary\": [], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"applied\": []}",
+  "bytes": 215,
   "method": "GET",
   "path": "/day.json",
-  "sha256": "96e356739f15fe1d19b126592c29a30c384b21a42fe3393a7d17d98e82c75735",
+  "sha256": "0d354ad31e6f50e03ef1465cb45cab7527123286119a643875c460c007e53fea",
   "status": 200,
   "step": "G11",
   "type": "application/json; charset=utf-8"
@@ -151,19 +151,19 @@
   "type": "text/html;charset=utf-8"
  },
  {
-  "bytes": 89332,
+  "bytes": 94948,
   "method": "GET",
   "path": "/css/pult.css",
-  "sha256": "a11cfb53dcb53285735c85bc67109cebefa2915b023fa62e3f0384c6e3ab603a",
+  "sha256": "28e3c2b949e97b5d51922c098e0f01f5e564cc0ed6f12bef49218709f699c508",
   "status": 200,
   "step": "G18",
   "type": "text/css; charset=utf-8"
  },
  {
-  "bytes": 69564,
+  "bytes": 72380,
   "method": "GET",
   "path": "/js/01-core.js",
-  "sha256": "51b3825c4f2a48708a124a8a676a3621399c5b6a5e87848979c8417cc05fcd99",
+  "sha256": "28fa6ad1817276f2c138ee0c795464c2b3b762871a6508fc1434cdf3e0a556c2",
   "status": 200,
   "step": "G19",
   "type": "text/javascript; charset=utf-8"
@@ -196,10 +196,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 35005,
+  "bytes": 40006,
   "method": "GET",
   "path": "/js/05-day-plan.js",
-  "sha256": "0e23a517b250743f9ae8011f59ef89a3066ce24e5f60de5ffc522c0ed550253f",
+  "sha256": "6b6a4ff354a4fa238a9bac94b72600ed92259cf7b1e0c99a74602c30c9873db3",
   "status": 200,
   "step": "G23",
   "type": "text/javascript; charset=utf-8"
@@ -223,10 +223,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 35822,
+  "bytes": 35724,
   "method": "GET",
   "path": "/js/08-reports.js",
-  "sha256": "771804f105a91e17af031615f23809190621f1250e4e8ec8befbaf4362d179a6",
+  "sha256": "4a9d823e46d0bb6bad3cfa7170b1c4f24968194cf55b079b5d5893921379c1d8",
   "status": 200,
   "step": "G26",
   "type": "text/javascript; charset=utf-8"
@@ -241,10 +241,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 38602,
+  "bytes": 59786,
   "method": "GET",
   "path": "/js/10-settings.js",
-  "sha256": "4da5229db29f34132472ab09d292c442f15afc54d4ab1ee9f6d4f6e9e273db22",
+  "sha256": "71780ed346bcc4d0b73f8020525b3e7ea36bc6a2a9889edb324c592c24664c14",
   "status": 200,
   "step": "G28",
   "type": "text/javascript; charset=utf-8"
@@ -422,31 +422,31 @@
   "type": "application/json; charset=utf-8"
  },
  {
-  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 1, \"active\": 0, \"done\": 0, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 1, \"left\": 1, \"percent\": 0, \"score\": 0.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"results\": [{\"op\": \"add\", \"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"title\": \"Oracle task\"}]}",
-  "bytes": 992,
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"proposal_sources\": [], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 1, \"active\": 0, \"done\": 0, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 1, \"left\": 1, \"percent\": 0, \"score\": 0.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"results\": [{\"op\": \"add\", \"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"title\": \"Oracle task\"}]}",
+  "bytes": 1016,
   "method": "POST",
   "path": "/day/op",
-  "sha256": "ffb361f1f6432c637c8c6f286829e3c0ee9507853af242e0611b5a1f8cc875b3",
+  "sha256": "59d97fc55320a4d372a586c8d8416293fa2fc5c703ba951c643484d241e0d91b",
   "status": 200,
   "step": "S11",
   "type": "application/json; charset=utf-8"
  },
  {
-  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"position\": 1, \"priority\": \"normal\", \"kind\": \"stage\", \"project_id\": \"website\", \"project_name\": \"Company website\", \"stage_index\": 1, \"stage_name\": \"Build\", \"amount\": null, \"title\": \"Build\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"position\": 2, \"priority\": \"high\", \"kind\": \"advance\", \"project_id\": \"english\", \"project_name\": \"English course\", \"stage_index\": null, \"stage_name\": null, \"amount\": \"1 lesson\", \"title\": \"1 lesson\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 3, \"active\": 0, \"done\": 0, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 3, \"percent\": 0, \"score\": 0.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"results\": [{\"op\": \"add\", \"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"title\": \"Build\"}, {\"op\": \"add\", \"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"title\": \"1 lesson\"}]}",
-  "bytes": 2047,
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"position\": 1, \"priority\": \"normal\", \"kind\": \"stage\", \"project_id\": \"website\", \"project_name\": \"Company website\", \"stage_index\": 1, \"stage_name\": \"Build\", \"amount\": null, \"title\": \"Build\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"position\": 2, \"priority\": \"high\", \"kind\": \"advance\", \"project_id\": \"english\", \"project_name\": \"English course\", \"stage_index\": null, \"stage_name\": null, \"amount\": \"1 lesson\", \"title\": \"1 lesson\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"proposal_sources\": [], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 3, \"active\": 0, \"done\": 0, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 3, \"percent\": 0, \"score\": 0.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"results\": [{\"op\": \"add\", \"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"title\": \"Build\"}, {\"op\": \"add\", \"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"title\": \"1 lesson\"}]}",
+  "bytes": 2071,
   "method": "POST",
   "path": "/day/op",
-  "sha256": "aa15a0e0e30ea2777bacd39a93a8f9afdf37687f4f589ceb5bd12b3663199b02",
+  "sha256": "f67f5899ea6935203ab4ff6e13c324fd62212f30e4bf3d5fa62345d98fae6a20",
   "status": 200,
   "step": "S12",
   "type": "application/json; charset=utf-8"
  },
  {
-  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"done\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"position\": 1, \"priority\": \"normal\", \"kind\": \"stage\", \"project_id\": \"website\", \"project_name\": \"Company website\", \"stage_index\": 1, \"stage_name\": \"Build\", \"amount\": null, \"title\": \"Build\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"position\": 2, \"priority\": \"high\", \"kind\": \"advance\", \"project_id\": \"english\", \"project_name\": \"English course\", \"stage_index\": null, \"stage_name\": null, \"amount\": \"1 lesson\", \"title\": \"1 lesson\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 2, \"active\": 0, \"done\": 1, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 2, \"percent\": 33, \"score\": 1.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"results\": [{\"op\": \"status\", \"id\": \"00000000000000000000000000000001\", \"status\": \"done\"}]}",
-  "bytes": 1928,
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"done\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"position\": 1, \"priority\": \"normal\", \"kind\": \"stage\", \"project_id\": \"website\", \"project_name\": \"Company website\", \"stage_index\": 1, \"stage_name\": \"Build\", \"amount\": null, \"title\": \"Build\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"position\": 2, \"priority\": \"high\", \"kind\": \"advance\", \"project_id\": \"english\", \"project_name\": \"English course\", \"stage_index\": null, \"stage_name\": null, \"amount\": \"1 lesson\", \"title\": \"1 lesson\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"proposal_sources\": [], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 2, \"active\": 0, \"done\": 1, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 2, \"percent\": 33, \"score\": 1.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"results\": [{\"op\": \"status\", \"id\": \"00000000000000000000000000000001\", \"status\": \"done\"}]}",
+  "bytes": 1952,
   "method": "POST",
   "path": "/day/op",
-  "sha256": "c7f9231dde746b8c7de8f5c7724039c2eff14e6ccec541f3d5d0782af1101db1",
+  "sha256": "2c1e2b92451d804fb12dabb2e6a4e4ba943d43e45c113af33054bdee3687c1e5",
   "status": 200,
   "step": "S13",
   "type": "application/json; charset=utf-8"
@@ -482,11 +482,11 @@
   "type": "application/json; charset=utf-8"
  },
  {
-  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"done\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"position\": 1, \"priority\": \"normal\", \"kind\": \"stage\", \"project_id\": \"website\", \"project_name\": \"Company website\", \"stage_index\": 1, \"stage_name\": \"Build\", \"amount\": null, \"title\": \"Build\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"position\": 2, \"priority\": \"high\", \"kind\": \"advance\", \"project_id\": \"english\", \"project_name\": \"English course\", \"stage_index\": null, \"stage_name\": null, \"amount\": \"1 lesson\", \"title\": \"1 lesson\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 2, \"active\": 0, \"done\": 1, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 2, \"percent\": 33, \"score\": 1.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"applied\": []}",
-  "bytes": 1852,
+  "body": "{\"ok\": true, \"day\": \"2026-01-15\", \"today\": \"2026-01-15\", \"note\": \"\", \"close\": null, \"items\": [{\"id\": \"00000000000000000000000000000001\", \"day\": \"2026-01-15\", \"position\": 0, \"priority\": \"normal\", \"kind\": \"task\", \"project_id\": null, \"project_name\": null, \"stage_index\": null, \"stage_name\": null, \"amount\": null, \"title\": \"Oracle task\", \"status\": \"done\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000002\", \"day\": \"2026-01-15\", \"position\": 1, \"priority\": \"normal\", \"kind\": \"stage\", \"project_id\": \"website\", \"project_name\": \"Company website\", \"stage_index\": 1, \"stage_name\": \"Build\", \"amount\": null, \"title\": \"Build\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}, {\"id\": \"00000000000000000000000000000003\", \"day\": \"2026-01-15\", \"position\": 2, \"priority\": \"high\", \"kind\": \"advance\", \"project_id\": \"english\", \"project_name\": \"English course\", \"stage_index\": null, \"stage_name\": null, \"amount\": \"1 lesson\", \"title\": \"1 lesson\", \"status\": \"planned\", \"note\": \"\", \"moved_to\": null, \"moved_from\": null, \"added_by\": \"pult\", \"created_at\": \"2026-01-15T10:00:00+02:00\", \"updated_at\": \"2026-01-15T10:00:00+02:00\", \"moved_to_day\": null, \"moved_from_day\": null}], \"proposal_sources\": [], \"summary\": [{\"day\": \"2026-01-15\", \"counts\": {\"planned\": 2, \"active\": 0, \"done\": 1, \"partial\": 0, \"not_done\": 0, \"moved\": 0, \"removed\": 0}, \"total\": 3, \"left\": 2, \"percent\": 33, \"score\": 1.0, \"rating\": null, \"closed\": false, \"closed_at\": \"\", \"note\": \"\"}], \"requests\": [], \"pending\": 0, \"schema\": 2, \"sqlite\": \"<SQLITE>\", \"applied\": []}",
+  "bytes": 1876,
   "method": "GET",
   "path": "/day.json?day=2026-01-15",
-  "sha256": "6e325b352d7110b087764fdec7de4eb96e355fd8beef012abc69a397ca849fd7",
+  "sha256": "241799bac50d91b0c3916bcb0f87ff61bf33c394111147d133cc7f20620c8b15",
   "status": 200,
   "step": "S15",
   "type": "application/json; charset=utf-8"
@@ -502,10 +502,10 @@
   "type": "application/json; charset=utf-8"
  },
  {
-  "bytes": 13554,
+  "bytes": 13651,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "928a4e0ee435e43133f0862f87e059dfc929654ebe34203165546c1fb050e8c2",
+  "sha256": "943fa88faf8167eef7ea930f5630a3a095069ed8408cf802cb8b9c2ef926ab41",
   "status": 200,
   "step": "S17",
   "type": "text/javascript; charset=utf-8"

@@ -323,7 +323,14 @@ window.BOARD = {
   "ui": {
    "collapsed": [],
    "summary_hidden": "",
-   "seen": {}
+   "seen": {},
+   "project_order": [
+    "website",
+    "shop",
+    "english",
+    "garden",
+    "career"
+   ]
   }
  },
  "icon_styles": [
@@ -651,6 +658,6 @@ window.BOARD = {
   "version_new": "",
   "notes": [],
   "enabled": false,
-  "version_here": "1.0.03"
+  "version_here": "1.0.04"
  }
 };

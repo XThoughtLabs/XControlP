@@ -9,7 +9,9 @@
   const DP_NEXT_PRIO = { high: "normal", normal: "low", low: "high" };
   const DP_KIND = { stage: tl("Завершить этап"), advance: tl("Продвинуться"), task: tl("Задача") };
   const DP_CHIPS = [tl("1 урок"), tl("2 урока"), tl("1 час"), tl("2 часа"), tl("1 глава")];
-  state.day = { key: "", data: null, text: "", busy: false, err: "", showHidden: false, noteOpen: "", loading: false,
+  const PROPOSAL_KEY_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}\|[a-z0-9][a-z0-9-]{0,39}$/;
+  state.day = { key: "", data: null, text: "", busy: false, err: "", notice: "", showHidden: false, noteOpen: "", loading: false,
+    loadSeq: 0, writeSeq: 0, proposalCheck: { day: "", sources: [], confirmed: false },
     form: { project: "", kind: "task", stage: null, amount: "", title: "", priority: "normal" } };
 
   function dpServer() { return !!token && location.protocol.startsWith("http"); }
@@ -31,31 +33,73 @@
     return (rel ? rel[0].toUpperCase() + rel.slice(1) + ", " + wd : wd[0].toUpperCase() + wd.slice(1)) + ", " + d.getDate() + " " + MONTHS_GEN[d.getMonth()] + " " + d.getFullYear();
   }
 
+  function setProposalCheck(day, sources, confirmed) {
+    const S = state.day, old = S.proposalCheck;
+    const next = { day, sources: confirmed ? sources.slice() : [], confirmed: !!confirmed };
+    const changed = !old || old.day !== next.day || old.confirmed !== next.confirmed || old.sources.join("\n") !== next.sources.join("\n");
+    S.proposalCheck = next;
+    return changed;
+  }
+  function proposalSourcesValid(res, clientDay) {
+    return !!(res && res.ok === true && res.today === clientDay && Array.isArray(res.proposal_sources) &&
+      res.proposal_sources.every((key) => typeof key === "string" && PROPOSAL_KEY_RE.test(key)) &&
+      new Set(res.proposal_sources).size === res.proposal_sources.length);
+  }
+  function dayWriteConfirmed(res) {
+    const S = state.day, clientDay = dayKey(today());
+    S.writeSeq++;
+    if (proposalSourcesValid(res, clientDay)) setProposalCheck(clientDay, res.proposal_sources, true);
+    else setProposalCheck(clientDay, [], false);
+  }
+
   async function dayLoad(silent) {
     const S = state.day;
     if (!dpServer() || S.loading) return;
-    const key = dpKey();
+    const key = dpKey(), clientDay = dayKey(today()), requestId = ++S.loadSeq, writeAtStart = S.writeSeq;
+    let shouldRender = true, refreshForDayChange = false, proposalChanged = false;
     S.loading = true;
     try {
       const r = await fetch("/day.json?day=" + encodeURIComponent(key) + "&v=" + Date.now(), { cache: "no-store" });
-      const res = await r.json();
-      if (key !== S.key) return;                         // пока ждали, перешли на другой день
-      if (!res.ok) { S.err = res.error || tl("План дня не прочитался"); }
+      let res;
+      try { res = await r.json(); } catch (err) { res = { ok: false, error: tl("ответ ") + r.status }; }
+      if (requestId !== S.loadSeq || writeAtStart !== S.writeSeq) shouldRender = false;
       else {
-        const text = JSON.stringify(res);
-        if (S.err && !silent) S.err = "";
-        if (text === S.text && silent) return;
-        S.text = text; S.data = res;
-        if (!silent) S.err = "";
+        const currentDay = dayKey(today());
+        if (currentDay !== clientDay) {
+          proposalChanged = setProposalCheck(currentDay, [], false);
+          refreshForDayChange = true;
+        } else if (r.ok && proposalSourcesValid(res, clientDay)) proposalChanged = setProposalCheck(clientDay, res.proposal_sources, true);
+        else proposalChanged = setProposalCheck(clientDay, [], false);
+        if (key !== S.key) shouldRender = false; // пока ждали, перешли на другой день
+        else if (!r.ok || res.ok !== true) S.err = res.error || tl("План дня не прочитался");
+        else {
+          const text = JSON.stringify(res), changed = text !== S.text;
+          const hadError = !!S.err;
+          if (hadError) S.err = "";
+          if (changed) { S.text = text; S.data = res; }
+          // Идентичный JSON после сбоя всё равно восстанавливает подтверждение.
+          if (!changed && silent && !proposalChanged && !hadError) shouldRender = false;
+        }
       }
     } catch (err) {
-      S.err = tl("Программа Пульта не отвечает: ") + (err && err.message || err);
+      if (requestId === S.loadSeq && writeAtStart === S.writeSeq) {
+        const currentDay = dayKey(today());
+        proposalChanged = setProposalCheck(currentDay, [], false);
+        if (currentDay !== clientDay) refreshForDayChange = true;
+        if (key === S.key) S.err = tl("Программа Пульта не отвечает: ") + (err && err.message || err);
+        else shouldRender = false;
+      } else shouldRender = false;
     } finally {
       S.loading = false;
     }
+    if (refreshForDayChange) setTimeout(() => dayLoad(true), 0);
+    if (!shouldRender) return;
     renderNav();
     if (state.view === "day") renderDay();
-    else if (document.querySelector("[data-plan], .plan-in")) render();   // кнопки «В план дня» узнают, что уже в плане
+    else if (document.querySelector("[data-plan], .plan-in, .plan-pending")) {
+      if (typeof deferDayPlanRender === "function" && deferDayPlanRender()) return;
+      render();                                                        // кнопки «В план дня» узнают, что уже в плане
+    }
   }
 
   async function dayPost(ops) {
@@ -69,7 +113,7 @@
       let res = {};
       try { res = await r.json(); } catch (err) { res = { ok: false, error: tl("ответ ") + r.status }; }
       if (!r.ok || !res.ok) { S.err = res.error || (tl("ответ ") + r.status); return false; }
-      S.err = ""; S.data = res; S.text = JSON.stringify(res);
+      S.err = ""; S.data = res; S.text = JSON.stringify(res); dayWriteConfirmed(res);
       return true;
     } catch (err) {
       S.err = tl("Не сохранилось: ") + (err && err.message || err);
@@ -85,13 +129,30 @@
   // по нему кнопка видит, что задача уже в плане, и после перезапуска Пульта. Отменить — «убрать» в плане дня.
   const PLAN = { done: new Set(), req: {}, busy: new Set() };
   const planTag = (src) => "[" + src + "]";
+  function proposalPlanState(key) {
+    const C = state.day.proposalCheck;
+    if (!C || C.confirmed !== true || C.day !== dayKey(today())) return "unknown";
+    return C.sources.includes(key) ? "present" : "missing";
+  }
   function planHas(src) {
+    if (src.startsWith("pr:")) return proposalPlanState(src.slice(3)) === "present";
     if (PLAN.done.has(src)) return true;
     const D = state.day.data;
     return !!(D && D.day === dayKey(today()) && (D.items || []).some((i) => i.status !== "removed" && String(i.note || "").indexOf(planTag(src)) >= 0));
   }
   function planBtn(src, title, project, from, primary) {
     if (!dpServer()) return "";
+    if (src.startsWith("pr:")) {
+      const key = src.slice(3), mark = typeof prMark === "function" ? prMark(key) : null;
+      const planState = proposalPlanState(key);
+      if (planState === "present") return '<span class="plan-in">✓ ' + esc(tl("уже в плане на сегодня")) + '</span>';
+      if (planState === "unknown") return '<span class="plan-pending" role="status">' + esc(tl("Состояние плана дня неизвестно")) + '</span>';
+      PLAN.req[src] = { title, project, from };
+      const accepted = mark && mark.state === "accepted";
+      return (accepted ? '<span class="plan-previous">' + esc(tl("Ранее добавлено")) + '</span>' : "") +
+        '<button type="button" class="albtn plan-btn' + (primary ? ' al-primary' : '') + '" data-plan="' + esc(src) + '">' +
+        esc(tl(accepted ? "Добавить повторно на сегодня" : "В план дня")) + '</button>';
+    }
     if (planHas(src)) return '<span class="plan-in">✓ ' + esc(tl("уже в плане")) + '</span>';
     PLAN.req[src] = { title, project, from };
     return '<button type="button" class="albtn plan-btn' + (primary ? ' al-primary' : '') + '" data-plan="' + esc(src) + '">' + esc(tl("В план дня")) + '</button>';
@@ -101,7 +162,10 @@
     if (!q || PLAN.busy.has(src) || planHas(src)) return;
     const day = dayKey(today());
     const title = String(q.title || "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
-    const op = { op: "add", day, kind: "task", priority: "normal", title, note: (q.from ? q.from + " " : "") + planTag(src) };
+    const isProposal = src.startsWith("pr:");
+    const op = isProposal
+      ? { op: "proposal_add", key: src.slice(3), day, priority: "normal", title, note: q.from || "" }
+      : { op: "add", day, kind: "task", priority: "normal", title, note: (q.from ? q.from + " " : "") + planTag(src) };
     if (q.project && dpProject(q.project)) op.project = q.project;
     PLAN.busy.add(src);
     if (el) el.disabled = true;
@@ -110,9 +174,15 @@
       let res = {};
       try { res = await r.json(); } catch (err) { res = { ok: false, error: tl("ответ ") + r.status }; }
       if (!r.ok || !res.ok) throw new Error(res.error || (tl("ответ ") + r.status));
-      PLAN.done.add(src);
-      if (src.startsWith("pr:")) prMarkSet(src.slice(3), "accepted", null);
+      dayWriteConfirmed(res);
+      if (!isProposal) PLAN.done.add(src);
+      if (isProposal) await prMarkSet(src.slice(3), "accepted", null);
+      state.day.notice = state.day.key && state.day.key !== day ? tl("Задача добавлена на сегодня. Выбранная дата осталась без изменений") : "";
       if (!state.day.key || state.day.key === day) { state.day.data = res; state.day.text = JSON.stringify(res); }
+      else if (state.day.data && Array.isArray(res.proposal_sources)) {
+        state.day.data = Object.assign({}, state.day.data, { proposal_sources: res.proposal_sources });
+        state.day.text = JSON.stringify(state.day.data);
+      }
       render();
     } catch (err) {
       if (el) el.disabled = false;
@@ -272,7 +342,7 @@
         tl('<textarea id="dp-daynote" rows="3" maxlength="4000" placeholder="Например: урок английского сделан, отчёт — завтра">') + esc(D.note || "") + '</textarea>' +
         tl('<button type="button" class="cal-btn" data-dp="daynote">Сохранить итог</button></div></div>');
     }
-    box.innerHTML = (STAGE3_LAYOUT === "working-day" ? renderWorkingDayIntro(D, items) : "") + bar + (S.err ? '<div class="cal-hint dp-err">' + esc(S.err) + tl('<button type="button" class="cal-btn" data-dp="reload">Обновить</button></div>') : "") +
+    box.innerHTML = (STAGE3_LAYOUT === "working-day" ? renderWorkingDayIntro(D, items) : "") + bar + (S.notice ? '<div class="cal-hint" role="status">' + esc(S.notice) + '</div>' : "") + (S.err ? '<div class="cal-hint dp-err">' + esc(tl(S.err)) + tl('<button type="button" class="cal-btn" data-dp="reload">Обновить</button></div>') : "") +
       '<div class="dp-cols"><div class="dp-main">' + main + incoming + '</div><div class="dp-side">' +
       (dpServer() ? dpFormHtml() : "") + dpClaudeHtml(D) + dpCalendarHtml(key) + (D ? dpRecentHtml(D) : "") + '</div></div>' +
       tl('<div class="cal-note">Этапы проектов на Пульте план дня не двигает — их передвигает штаб. Задачи не удаляются: «убрать» можно вернуть.</div>');
@@ -287,7 +357,8 @@
     (board.answers || []).forEach((a) => (a.data && Array.isArray(a.data.proposals) ? a.data.proposals : []).forEach((p) => {
       const key = prKey(a, p), mark = prMark(key);
       if (mark && mark.state === "declined") return;
-      if (mark && mark.state === "accepted" && !planHas("pr:" + key)) return;
+      const planState = proposalPlanState(key);
+      if (planState === "present" || (planState === "unknown" && mark && mark.state === "accepted")) return;
       const project = p.project ? dpProject(p.project) : null;
       rows.push('<article class="dp-hq-proposal"><div class="dp-hq-copy"><div class="dp-hq-source">' + esc(tl("Предложение штаба")) + '</div>' +
         '<b>' + esc(rpT(p.text)) + '</b>' + (project ? '<span class="dp-proj-name">' + esc(project.name) + '</span>' : "") +
@@ -306,8 +377,8 @@
       : '<li class="wd-empty">' + esc(tl("На сегодня задач нет")) + '</li>';
     const proposals = [];
     (board.answers || []).forEach((a) => (a.data && Array.isArray(a.data.proposals) ? a.data.proposals : []).forEach((p) => {
-      const mark = prMark(prKey(a, p));
-      if (!mark || (mark.state !== "accepted" && mark.state !== "declined")) proposals.push({ p, key: prKey(a, p) });
+      const key = prKey(a, p), mark = prMark(key), planState = proposalPlanState(key);
+      if ((!mark || mark.state === "accepted") && planState !== "present" && !(planState === "unknown" && mark && mark.state === "accepted")) proposals.push({ p, key });
     }));
     const proposalRows = proposals.length ? proposals.map(({ p, key }) => {
       const project = p.project ? board.projects.find((x) => x.id === p.project) : null;
@@ -340,7 +411,7 @@
     const S = state.day, F = S.form, D = S.data && S.data.day === dpKey() ? S.data : null;
     const vis = D ? dpVisible(D.items).map((i) => i.id) : [];
     const [cmd, arg, arg2] = a.split(":");
-    const go = (key) => { S.key = key; S.noteOpen = ""; S.err = ""; renderDay(); dayLoad(false); };
+    const go = (key) => { S.key = key; S.noteOpen = ""; S.err = ""; S.notice = ""; renderDay(); dayLoad(false); };
     if (cmd === "prev" || cmd === "next") return go(dayKey(addDays(parseDate(dpKey()), cmd === "prev" ? -1 : 1)));
     if (cmd === "today") return go(dayKey(today()));
     if (cmd === "goto") return parseDate(arg) ? go(arg) : undefined;

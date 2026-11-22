@@ -293,9 +293,8 @@
     const props = (Array.isArray(D.proposals) ? D.proposals : []).map((p) => {
       const key = prKey(a, p), st = (prMark(key) || {}).state || "", proj = p.project ? board.projects.find((x) => x.id === p.project) : null;
       const btns = st === "declined" ? '<span class="pr-st">' + esc(tl("отклонено")) + '</span><button type="button" class="albtn" data-pr="active:' + esc(key) + '">' + esc(tl("Вернуть")) + '</button>'
-        : st === "accepted" ? '<span class="plan-in">✓ ' + esc(tl("уже в плане")) + '</span>'
         : planBtn("pr:" + key, rpT(p.text), proj ? proj.id : "", tl("Из предложений штаба"), true) +
-          (dpServer() ? '<button type="button" class="albtn" data-pr="declined:' + esc(key) + '">' + esc(tl("Отклонить")) + '</button>' : "");
+          (dpServer() && !st ? '<button type="button" class="albtn" data-pr="declined:' + esc(key) + '">' + esc(tl("Отклонить")) + '</button>' : "");
       return '<li class="pr-item' + (st ? " pr-" + st : "") + '"><div>' + mdInline(rpT(p.text)) + (proj ? ' <span class="pr-proj">· ' + esc(proj.name) + '</span>' : "") + '</div>' +
         (p.why ? '<div class="pr-why">' + mdInline(rpT(p.why)) + '</div>' : "") + '<div class="albtns">' + btns + '</div></li>';
     }).join("");

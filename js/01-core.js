@@ -298,6 +298,8 @@
       transitions: (Array.isArray(ih.transitions) ? ih.transitions : []).map((t) => ({ date: parseDate(t.date), set: t.set, id: t.id, from: t.from, to: t.to })).filter((t) => t.date),
       bornDone: (Array.isArray(ih.born_done) ? ih.born_done : []).map((t) => ({ date: parseDate(t.date), set: t.set, id: t.id, from: "", to: "done" })).filter((t) => t.date) };
     return { updated: parseDate(data.updated), focus: data.focus, groups, projects, history, ideas, ideaSets, ideaHistory, sync: data.sync || null,
+      settings: data.settings && typeof data.settings === "object" ? data.settings : {},
+      project_overview_error: data.project_overview_error || "",
       stats: data.stats && typeof data.stats === "object" ? data.stats : null,
       ideaSource: data.idea_source || null, calendar: normCalendar(data.calendar),
       alerts: data.alerts && typeof data.alerts === "object" ? data.alerts : {},
@@ -615,6 +617,16 @@
     return state.projectGroup === "__all" ? list : list.filter((p) => p.group === state.projectGroup);
   }
 
+  function stage3Order(list) {
+    const ids = list.map((p) => p.id), saved = board.settings && board.settings.ui && board.settings.ui.project_order;
+    const known = new Set(ids), seen = new Set(), order = [];
+    (Array.isArray(saved) ? saved : []).forEach((id) => {
+      if (typeof id === "string" && known.has(id) && !seen.has(id)) { order.push(id); seen.add(id); }
+    });
+    ids.forEach((id) => { if (!seen.has(id)) { order.push(id); seen.add(id); } });
+    return order;
+  }
+
   function stage3Proposal(projectId) {
     const answers = (board.answers || []);
     for (const a of answers) {
@@ -647,28 +659,38 @@
           '<button type="button" class="albtn" data-goto="proposals">' + esc(tl("Открыть предложение")) + '</button></div></div>' : "") +
         '</article>';
     }).join("") : '<div class="empty">' + esc(tl("Внимание сейчас не требуется")) + '</div>';
-    const projects = stage3Projects(list);
+    const order = stage3Order(board.projects), orderIndex = new Map(order.map((id, i) => [id, i]));
+    const priority = new Set(order.slice(0, 6));
+    const projects = stage3Projects(list).slice().sort((a, b) => orderIndex.get(a.id) - orderIndex.get(b.id));
     const rows = projects.map((p) => {
       const linked = stage3Proposal(p.id), alerts = alertsOf(p), next = p.stages[p.current + 1];
-      return '<article class="pf-project" data-open="' + esc(p.id) + '" tabindex="0">' +
-        '<div class="pf-project-head"><div><h3>' + esc(p.name) + '</h3><div class="pgroup">' + esc(td(p.group)) + ' · ' + STATUS_LABEL[p.status] + '</div></div>' +
-        '<button type="button" class="svc-btn" data-open="' + esc(p.id) + '">' + esc(tl("Открыть проект")) + '</button></div>' +
-        '<div class="pf-project-stages"><div><span>' + esc(tl("Текущий этап")) + '</span><b class="stage-current-value">' + esc(p.stages[p.current] || "—") + '</b></div>' +
+      const isPriority = priority.has(p.id), current = p.status || "plan";
+      const statusOptions = ["work", "pause", "stop", "plan"].map((status) => '<option value="' + status + '"' + (status === current ? " selected" : "") + '>' + esc(STATUS_LABEL[status]) + '</option>').join("");
+      return '<article class="pf-project' + (isPriority ? " is-priority" : "") + '" data-open="' + esc(p.id) + '" data-project-id="' + esc(p.id) + '" data-status="' + esc(current) + '" tabindex="0">' +
+        '<div class="pf-project-head"><div class="pf-project-title"><span class="pf-group-mark" aria-hidden="true">' + esc(GROUP_ICON[p.group] || "◆") + '</span><div class="pf-project-heading"><div class="pf-project-name-line"><h3>' + esc(p.name) + '</h3>' +
+        (isPriority ? '<span class="pf-priority">' + esc(tl("В приоритете сейчас")) + '</span>' : "") +
+        '<select class="pf-status-control" data-project-status="' + esc(p.id) + '" data-status="' + esc(current) + '" aria-label="' + esc(tl("Статус проекта") + ": " + p.name) + '"' + (window.PF_PROJECT_SAVING ? " disabled" : "") + '>' + statusOptions + '</select></div><div class="pgroup">' + esc(td(p.group)) + ' · ' + esc(tl("Проект")) + ' ' + (orderIndex.get(p.id) + 1) + '</div></div></div>' +
+        '<div class="pf-project-tools"><button type="button" class="pf-drag-handle" data-project-handle="' + esc(p.id) + '" aria-label="' + esc(tl("Переместить карточку") + ": " + p.name) + '" title="' + esc(tl("Переместить карточку")) + '" aria-keyshortcuts="Space Enter ArrowUp ArrowDown Escape">⠿</button></div></div>' +
+        '<div class="pf-project-stages"><div class="pf-current-stage"><span>' + esc(tl("Текущий этап")) + '</span><b class="stage-current-value">' + esc(p.stages[p.current] || "—") + '</b></div>' +
         '<div><span>' + esc(tl("Следующий этап")) + '</span><b>' + esc(next || tl("Следующий шаг не определён")) + '</b></div>' +
         '<div><span>' + esc(tl("Последнее движение")) + '</span><b>' + (p.last ? fmt(p.last) + ' · ' + esc(p.days == null ? "—" : daysText(p.days)) : "—") + '</b></div></div>' +
         (alerts.length ? '<div class="pf-alert-reason"><b>⚠ ' + esc(tl("Причина тревоги")) + '</b> · ' + esc(alerts[0].text) + '</div>' : "") +
         (linked ? '<div class="pf-project-proposal"><b>' + esc(tl("Предложение штаба")) + '</b> · ' + esc(rpT(linked.proposal.text)) + '<div class="albtns">' +
           planBtn("pr:" + linked.key, rpT(linked.proposal.text), p.id, tl("Из предложений штаба"), true) +
           '<button type="button" class="albtn" data-goto="proposals">' + esc(tl("Открыть предложение")) + '</button></div></div>' : "") +
+        '<div class="pf-project-actions"><button type="button" class="svc-btn" data-open="' + esc(p.id) + '">' + esc(tl("Открыть проект")) + '</button></div>' +
         '</article>';
     }).join("");
-    box.innerHTML = '<section class="card pf-needs"><div class="pf-section-head"><h2>' + esc(tl("Требует внимания")) + '</h2><div class="pf-section-actions">' +
+    const localMessage = window.PF_PROJECT_MESSAGE ? '<p class="pf-project-message" role="status">' + esc(window.PF_PROJECT_MESSAGE) + '</p>' : "";
+    const buildError = board.project_overview_error ? '<p class="pf-project-message" role="alert">' + esc(tl("Не удалось восстановить состояние карточек") + ": " + board.project_overview_error) + '</p>' : "";
+    box.innerHTML = localMessage + buildError + '<section class="card pf-needs"><div class="pf-section-head"><h2>' + esc(tl("Требует внимания")) + '</h2><div class="pf-section-actions">' +
       '<button type="button" class="svc-btn" data-goto="day">' + esc(tl("План дня")) + '</button>' +
       '<button type="button" class="svc-btn" data-scroll-to="project-list">' + esc(tl("Проекты")) + '</button>' +
       '<button type="button" class="svc-btn" data-scroll-to="overviewCharts">' + esc(tl("Графики")) + '</button>' +
       '<button type="button" class="svc-btn" data-goto="alerts">' + esc(tl("Тревоги")) + '</button></div></div><div class="pf-attention-list">' + attentionRows + '</div></section>' +
       '<section class="card pf-list" id="project-list"><div class="pf-section-head"><h2>' + esc(tl("Проекты")) + ' · ' + projects.length + '</h2></div>' +
-      stage3Groups(list, "projects") + '<div class="pf-project-list">' + (rows || '<div class="empty">' + esc(tl("Здесь нет проектов")) + '</div>') + '</div></section>';
+      stage3Groups(list, "projects") + '<div class="pf-project-list">' + (rows || '<div class="empty">' + esc(tl("Здесь нет проектов")) + '</div>') + '</div></section>' +
+      '<div id="pf-order-live" aria-live="polite" aria-atomic="true"></div>';
   }
 
   function renderFeed(list) {

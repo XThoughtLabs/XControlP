@@ -29,6 +29,7 @@ UI_KEY = re.compile(r"^[a-z0-9][a-z0-9:_|.-]{0,79}$")
 UI_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$")
 UI_SECTIONS = ("summary", "proposals", "digest", "digest-interesting", "digest-useful")   # the digest tabs: per kind
 UI_FOLD_MAX = 300
+UI_PROJECT_ORDER_MAX = 2000
 SETTINGS_LOCK = threading.Lock()   # one read-modify-write of settings.json at a time
 
 
@@ -63,6 +64,10 @@ def clean_ui(raw):
     seen = raw.get("seen") if isinstance(raw.get("seen"), dict) else {}
     seen = {k: v for k, v in seen.items() if k in UI_SECTIONS and isinstance(v, str) and UI_ID.fullmatch(v)}
     ui = {"collapsed": folded, "summary_hidden": hidden, "seen": seen}
+    order = raw.get("project_order")
+    if isinstance(order, list):
+        ui["project_order"] = list(dict.fromkeys(pid for pid in order
+                                                  if isinstance(pid, str) and UI_ID.fullmatch(pid)))[:UI_PROJECT_ORDER_MAX]
     version = raw.get("version_hidden")
     if isinstance(version, str) and RELEASE_VERSION.fullmatch(version):
         ui["version_hidden"] = version     # only when set: until the first cross, settings.json stays as it was

@@ -42,6 +42,8 @@ EXPORT_DAYS_BACK = 60                        # day.json: дни от (сегод
 REQUEST_WAIT = 10                            # недописанный запрос моложе 10 с — подождать
 
 ID_RE = re.compile(r"^[0-9a-f]{32}$")
+PROPOSAL_SOURCE_RE = re.compile(r"\[pr:([A-Za-z0-9][A-Za-z0-9._-]{0,99}\|[a-z0-9][a-z0-9-]{0,39})\]")
+PROPOSAL_KEY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}\|[a-z0-9][a-z0-9-]{0,39}$")
 REQUEST_RE = re.compile(r"^[0-9A-Za-z._-]{1,120}\.json$")
 DAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SPACES = re.compile(r"\s+")
@@ -355,6 +357,23 @@ class Store:
                                WHERE i.day = ? ORDER BY i.position, i.created_at, i.id""", (day,)).fetchall()
         return [row_dict(r) for r in rows]
 
+    def proposal_sources(self, conn, day):
+        """Proposal keys with a visible task on one day; moved and removed rows do not count."""
+        keys = set()
+        for row in conn.execute("SELECT note FROM items WHERE day = ? AND status NOT IN ('moved', 'removed')", (day,)):
+            keys.update(PROPOSAL_SOURCE_RE.findall(row["note"] or ""))
+        return sorted(keys)
+
+    def visible_proposal_item(self, conn, key, day, exclude_id=None):
+        """Return the first visible task for an exact proposal source key and date."""
+        tag = f"[pr:{key}]"
+        sql = "SELECT id, title FROM items WHERE day = ? AND status NOT IN ('moved', 'removed') AND instr(note, ?) > 0"
+        args = [day, tag]
+        if exclude_id:
+            sql += " AND id <> ?"
+            args.append(exclude_id)
+        return conn.execute(sql + " ORDER BY position, created_at, id LIMIT 1", args).fetchone()
+
     def summary(self, conn, first, last):
         rows = conn.execute("SELECT day, status, count(*) AS n FROM items WHERE day BETWEEN ? AND ? GROUP BY day, status",
                             (first, last)).fetchall()
@@ -411,7 +430,8 @@ class Store:
                 close = conn.execute("SELECT rating, closed, closed_at FROM day_close WHERE day = ?", (day,)).fetchone()
                 return {"ok": True, "day": day, "today": t.isoformat(), "note": note["note"] if note else "",
                         "close": row_dict(close) if close else None,
-                        "items": self.items_of(conn, day), "summary": self.summary(conn, first.isoformat(), last.isoformat()),
+                        "items": self.items_of(conn, day), "proposal_sources": self.proposal_sources(conn, t.isoformat()),
+                        "summary": self.summary(conn, first.isoformat(), last.isoformat()),
                         "requests": self.requests_tail(conn, 10), "pending": len(self.pending()),
                         "schema": SCHEMA_VERSION, "sqlite": sqlite3.sqlite_version}
             finally:
@@ -543,6 +563,22 @@ class Store:
         self.log(conn, iid, by, "add", None, title)
         return {"op": "add", "id": iid, "day": day, "title": title}
 
+    def op_proposal_add(self, conn, op, by, projects):
+        """Atomically add an HQ proposal task once per source key and target day."""
+        key = op.get("key")
+        if not isinstance(key, str) or not PROPOSAL_KEY_RE.fullmatch(key):
+            raise DayError("нет корректного ключа предложения")
+        day = check_day(op.get("day"))
+        tag = f"[pr:{key}]"
+        existing = self.visible_proposal_item(conn, key, day)
+        if existing:
+            return {"op": "proposal_add", "id": existing["id"], "day": day, "title": existing["title"], "existing": True}
+        note = str(op.get("note") or "").strip()
+        note = (note + " " + tag).strip()
+        add = dict(op, op="add", kind="task", day=day, note=note)
+        result = self.op_add(conn, add, by, projects)
+        return {"op": "proposal_add", "id": result["id"], "day": day, "title": result["title"], "existing": False}
+
     def op_plan(self, conn, op, by, projects):
         """План дня целиком: несколько задач сразу. replace=true — сначала убрать ещё не начатые задачи этого дня."""
         day = check_day(op.get("day"))
@@ -584,6 +620,9 @@ class Store:
         row = self.item(conn, op)
         if row["status"] != "removed":
             raise DayError("вернуть можно только убранную задачу")
+        for key in PROPOSAL_SOURCE_RE.findall(row["note"] or ""):
+            if self.visible_proposal_item(conn, key, row["day"], exclude_id=row["id"]):
+                raise DayError("У предложения уже есть задача на эту дату")
         last = conn.execute("""SELECT old FROM item_log WHERE item_id = ? AND action = 'status' AND new = 'removed'
                                ORDER BY n DESC LIMIT 1""", (row["id"],)).fetchone()
         before = last["old"] if last and last["old"] in SETTABLE and last["old"] != "removed" else "planned"

@@ -1,6 +1,26 @@
 {
- "version": "1.0.03",
+ "version": "1.0.04",
  "releases": [
+  {
+   "version": "1.0.04",
+   "notes": {
+    "en": [
+     "Reorder project cards by dragging them from their original position. The saved order keeps the first six projects in view as your current focus.",
+     "Change project status from the card header. Green, orange and red borders show active, paused and stopped projects.",
+     "Proposal badges reflect today's Day Plan. You can add a missing proposal again, and Restore keeps one visible task for that proposal on the same date."
+    ],
+    "ru": [
+     "Перетаскивай карточки прямо с их места. Порядок сохраняется, а первые шесть проектов отмечаются как текущий рабочий приоритет.",
+     "Статус можно менять в шапке карточки. Зелёная рамка означает «В работе», оранжевая — «На паузе», красная — «Остановлен».",
+     "Отметки предложений сверяются с Планом дня на сегодня. Отсутствующее предложение можно добавить повторно, а кнопка «Вернуть» защищает от второй задачи на ту же дату."
+    ],
+    "he": [
+     "אפשר לגרור כרטיסי פרויקטים מהמקום שלהם. הסדר נשמר, וששת הפרויקטים הראשונים מסומנים כמוקד העבודה הנוכחי.",
+     "אפשר לשנות את מצב הפרויקט בכותרת הכרטיס. מסגרת ירוקה מציינת פרויקט בעבודה, כתומה מציינת השהיה ואדומה מציינת עצירה.",
+     "הסימון בהצעות משקף את תוכנית היום. אפשר להוסיף שוב הצעה שחסרה בתוכנית, ופעולת השחזור מונעת יצירת משימה כפולה לאותו תאריך."
+    ]
+   }
+  },
   {
    "version": "1.0.03",
    "notes": {

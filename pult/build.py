@@ -65,6 +65,8 @@ def build():
         data["translations"] = read_translations()
         data["settings"] = read_settings()
         data["icon_styles"] = [{k: v for k, v in st.items() if k != "folder"} for st in icon_styles().values()]
+        from .project_overview import attach_to_build
+        attach_to_build(data)
         data["alerts"] = read_alerts()
         data["day_carried"] = read_carried()
         data["answers"] = read_answers()

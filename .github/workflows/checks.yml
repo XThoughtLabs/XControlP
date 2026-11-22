@@ -36,6 +36,8 @@ jobs:
         run: python -B tests/update_test.py
       - name: Window memory and HQ request kinds (settings.json, answers)
         run: python -B tests/ui_test.py
+      - name: Project card order, status and local assistant files
+        run: python -B tests/project_overview_test.py
       - name: Window checks (Node, no browser)
         run: node tests/window_test.js
       - name: Oracle (sample data, fixed date)

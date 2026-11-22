@@ -14,6 +14,9 @@ flags.json
 alerts.json
 proposals.json
 ideas-history.json
+project-overview.json
+project-overview-history.jsonl
+project-overview-pending.json
 requests/
 answers/
 research/

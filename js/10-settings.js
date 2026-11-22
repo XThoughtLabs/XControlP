@@ -159,6 +159,7 @@
 
   function render() {
     if (!board) return;
+    if (projectDrag) projectDragCancel(true, true);
     if (state.view === "idea-stats" && !board.ideaSets.length) state.view = "all";
     if (String(state.view).startsWith("ideas") && !ideaSetOf(state.view)) state.view = "all";
     $("app").classList.toggle("alerts-view", state.view === "alerts");
@@ -270,17 +271,32 @@
       return false;
     }
     const text = JSON.stringify(window.BOARD);
-    if (text !== lastText) { lastText = text; board = normalize(window.BOARD); calAfterLoad(); applySettings(); render(); }
+    if (text !== lastText) {
+      acceptIncomingBoard(window.BOARD, text);
+    }
     return true;
   }
 
   // Data changes: data.js is read again every 20 seconds; the screen redraws only if something changed.
   function refresh() {
-    const s = document.createElement("script");
-    s.src = "data.js?v=" + Date.now();
-    s.onload = () => { s.remove(); load(); dayLoad(true); revLoad(true); };
-    s.onerror = () => s.remove();
-    document.body.appendChild(s);
+    const generation = projectWriteGeneration, startedDuringWrite = projectWriteInFlight;
+    const previousBoard = copyBoardData(window.BOARD), previousError = window.BOARD_ERROR;
+    return new Promise((resolve) => {
+      const s = document.createElement("script");
+      s.src = "data.js?v=" + Date.now();
+      s.onload = () => {
+        s.remove();
+        if (startedDuringWrite || projectWriteInFlight || generation !== projectWriteGeneration) {
+          window.BOARD = copyBoardData(confirmedBoardData || previousBoard);
+          window.BOARD_ERROR = previousError;
+          resolve(false);
+          return;
+        }
+        load(); dayLoad(true); revLoad(true); resolve(true);
+      };
+      s.onerror = () => { s.remove(); resolve(false); };
+      document.body.appendChild(s);
+    });
   }
 
   // Синхронизация: кнопка просит программу Пульта (локальный сервер на 127.0.0.1) запустить сборщик.
@@ -295,6 +311,396 @@
       (a.synced ? tl(' · синхронизировано ') + esc(stamp(a.synced)) : "") + '</div>';
   }
   const token = (document.querySelector('meta[name="pult-token"]') || {}).content || "";
+  window.PF_PROJECT_SAVING = false;
+  window.PF_PROJECT_MESSAGE = "";
+  let projectDrag = null;
+  let deferredBoardData = null, deferredBoardText = "", deferredDayPlanRender = false;
+  let projectWriteGeneration = 0, projectWriteInFlight = false, confirmedBoardData = null;
+  function copyBoardData(data) {
+    return data && typeof data === "object" ? JSON.parse(JSON.stringify(data)) : data;
+  }
+  function orderFromData(data) {
+    const ids = (data && Array.isArray(data.projects) ? data.projects : []).map((p) => String(p.id || p.name || ""));
+    const known = new Set(ids), seen = new Set(), order = [];
+    const saved = data && data.settings && data.settings.ui && data.settings.ui.project_order;
+    (Array.isArray(saved) ? saved : []).forEach((id) => {
+      if (typeof id === "string" && known.has(id) && !seen.has(id)) { order.push(id); seen.add(id); }
+    });
+    ids.forEach((id) => { if (!seen.has(id)) { order.push(id); seen.add(id); } });
+    return order;
+  }
+  function visibleIdsFromData(data, order, filter) {
+    if (filter === "__all") return order;
+    const groups = new Map((data && Array.isArray(data.projects) ? data.projects : []).map((p) => [String(p.id || p.name || ""), p.group]));
+    return order.filter((id) => groups.get(id) === filter);
+  }
+  function acceptIncomingBoard(data, text) {
+    if (projectDrag) {
+      const order = orderFromData(data), visible = visibleIdsFromData(data, order, projectDrag.filter);
+      if (state.projectGroup === projectDrag.filter && order.join("\n") === projectDrag.fullOrder.join("\n") &&
+          visible.join("\n") === projectDrag.visible.join("\n")) {
+        deferredBoardData = data;
+        deferredBoardText = text;
+        return false;
+      }
+      deferredBoardData = null;
+      deferredBoardText = "";
+      deferredDayPlanRender = false;
+      projectDragCancel(true, true);
+    }
+    lastText = text;
+    board = normalize(data);
+    calAfterLoad(); applySettings(); render();
+    return true;
+  }
+  function deferDayPlanRender() {
+    if (!projectDrag) return false;
+    deferredDayPlanRender = true;
+    return true;
+  }
+  function applyDeferredProjectUpdates(renderNow = true) {
+    const data = deferredBoardData, text = deferredBoardText;
+    const shouldRender = !!data || deferredDayPlanRender;
+    deferredBoardData = null; deferredBoardText = "";
+    deferredDayPlanRender = false;
+    if (data) {
+      lastText = text;
+      board = normalize(data);
+      calAfterLoad(); applySettings();
+    }
+    if (renderNow && shouldRender) render();
+  }
+  function projectListElement() { return document.querySelector("#stage3 .pf-project-list"); }
+  function projectCardIds() { return Array.from(document.querySelectorAll("#stage3 .pf-project-list .pf-project"), (el) => el.dataset.projectId); }
+  function projectOrderFromBoard() { return stage3Order(board.projects); }
+  function projectDragClearMarkers(drag, removeGhost = false) {
+    if (!drag) return;
+    document.querySelectorAll(".pf-project.pf-picked,.pf-project.pf-drop-before,.pf-project.pf-drop-after,.pf-project.pf-drop-swap")
+      .forEach((el) => el.classList.remove("pf-picked", "pf-drop-before", "pf-drop-after", "pf-drop-swap"));
+    const list = projectListElement();
+    if (list) list.classList.remove("pf-dragging");
+    if (removeGhost && drag.ghost) drag.ghost.remove();
+  }
+  function projectDragZoom() {
+    const z = parseFloat(getComputedStyle(document.documentElement).zoom);
+    if (Number.isFinite(z) && z > 0) return z;
+    const scale = String(document.documentElement.dataset.scale || "100");
+    return ({ "90": .9, "100": 1, "110": 1.1, "125": 1.25 })[scale] || 1;
+  }
+  function projectDragPositionGhost(drag, x, y) {
+    if (!drag || !drag.ghost) return;
+    const zoom = drag.zoom || 1;
+    drag.ghost.style.left = ((x - drag.grabX) / zoom) + "px";
+    drag.ghost.style.top = ((y - drag.grabY) / zoom) + "px";
+  }
+  function projectDragFinish(focus = false, renderDeferred = true) {
+    const drag = projectDrag;
+    if (!drag) return;
+    const oldHandle = drag.card && drag.card.querySelector("[data-project-handle]");
+    if (oldHandle) oldHandle.setAttribute("aria-pressed", "false");
+    projectDragClearMarkers(drag, true);
+    projectDrag = null;
+    applyDeferredProjectUpdates(renderDeferred);
+    if (focus) requestAnimationFrame(() => {
+      const handle = document.querySelector('[data-project-handle="' + CSS.escape(drag.projectId) + '"]');
+      if (handle) handle.focus();
+    });
+  }
+  function projectDragCancel(focus = false, announce = false) {
+    const drag = projectDrag;
+    projectDragFinish(focus);
+    if (announce && drag) {
+      const live = document.getElementById("pf-order-live");
+      if (live) live.textContent = tl("Перемещение отменено");
+    }
+  }
+  function projectDragRows(list, drag) {
+    const cards = Array.from(list.querySelectorAll(".pf-project")).filter((el) => drag.visible.includes(el.dataset.projectId));
+    const rows = [];
+    cards.forEach((card) => {
+      const rect = card.getBoundingClientRect();
+      let row = rows.find((candidate) => Math.abs(candidate.top - rect.top) < 6);
+      if (!row) { row = {top: rect.top, bottom: rect.bottom, cards: []}; rows.push(row); }
+      row.top = Math.min(row.top, rect.top);
+      row.bottom = Math.max(row.bottom, rect.bottom);
+      row.cards.push({id: card.dataset.projectId, element: card, rect});
+    });
+    return rows.sort((a, b) => a.top - b.top);
+  }
+  function projectDragGapTarget(list, drag, x, y) {
+    const rows = projectDragRows(list, drag);
+    if (!rows.length) return null;
+    const first = rows[0].cards[0], lastRow = rows[rows.length - 1], last = lastRow.cards[lastRow.cards.length - 1];
+    if (y < rows[0].top) return {id: first.id, side: "before"};
+    for (let r = 0; r < rows.length - 1; r += 1) {
+      if (y >= rows[r].bottom && y < rows[r + 1].top) return {id: rows[r + 1].cards[0].id, side: "before"};
+    }
+    if (y >= lastRow.bottom) return {id: last.id, side: "after"};
+    const row = rows.find((candidate) => y >= candidate.top && y <= candidate.bottom);
+    if (!row) return null;
+    for (let i = 0; i < row.cards.length - 1; i += 1) {
+      const a = row.cards[i].rect, b = row.cards[i + 1].rect;
+      const leftToRight = a.left < b.left;
+      const gapStart = leftToRight ? a.right : b.right;
+      const gapEnd = leftToRight ? b.left : a.left;
+      if (x >= gapStart && x <= gapEnd) return {id: row.cards[i + 1].id, side: "before"};
+    }
+    const rtl = getComputedStyle(list).direction === "rtl";
+    const rowFirst = row.cards[0], rowLast = row.cards[row.cards.length - 1];
+    if (rtl ? x > rowFirst.rect.right : x < rowFirst.rect.left) return {id: rowFirst.id, side: "before"};
+    if (rtl ? x < rowLast.rect.left : x > rowLast.rect.right) return {id: rowLast.id, side: "after"};
+    return null;
+  }
+  function projectDragSetBoundary(list, drag, boundary) {
+    if (!boundary) return false;
+    const target = list.querySelector('[data-project-id="' + CSS.escape(boundary.id) + '"]');
+    if (!target) return false;
+    drag.targetId = boundary.id;
+    drag.mode = "insert";
+    drag.side = boundary.side;
+    target.classList.add(boundary.side === "before" ? "pf-drop-before" : "pf-drop-after");
+    return true;
+  }
+  function projectDragLift(drag) {
+    if (!drag || drag.lifted || window.PF_PROJECT_SAVING) return;
+    const card = document.querySelector('[data-project-id="' + CSS.escape(drag.projectId) + '"]');
+    const list = projectListElement();
+    if (!card || !list) { projectDragCancel(true); return; }
+    drag.lifted = true;
+    drag.card = card;
+    drag.visible = projectCardIds();
+    drag.targetId = drag.projectId;
+    drag.mode = "self";
+    drag.side = "before";
+    card.classList.add("pf-picked");
+    list.classList.add("pf-dragging");
+    if (!drag.keyboard) {
+      const ghost = card.cloneNode(true);
+      ghost.classList.add("pf-drag-ghost");
+      ghost.classList.remove("pf-picked");
+      ghost.setAttribute("aria-hidden", "true");
+      ghost.inert = true;
+      ghost.removeAttribute("data-project-id");
+      ghost.removeAttribute("data-open");
+      ghost.removeAttribute("tabindex");
+      ghost.querySelectorAll("[id], [data-project-id], [data-project-handle], [data-project-status]").forEach((el) => {
+        el.removeAttribute("id"); el.removeAttribute("data-project-id"); el.removeAttribute("data-project-handle"); el.removeAttribute("data-project-status"); el.removeAttribute("tabindex");
+      });
+      const zoom = drag.zoom || 1, rect = drag.cardRect;
+      ghost.style.width = (rect.width / zoom) + "px";
+      ghost.style.height = (rect.height / zoom) + "px";
+      (document.querySelector(".app") || document.body).appendChild(ghost);
+      drag.ghost = ghost;
+      projectDragPositionGhost(drag, drag.x, drag.y);
+    }
+    const handle = card.querySelector("[data-project-handle]");
+    if (handle) handle.setAttribute("aria-pressed", "true");
+  }
+  function projectDragTarget(x, y, forcedId = "", forcedSide = "") {
+    if (!projectDrag || !projectDrag.lifted) return;
+    const list = projectListElement(), drag = projectDrag;
+    if (!list) { projectDragCancel(true); return; }
+    const rect = list.getBoundingClientRect();
+    if (!drag.keyboard && (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom)) {
+      projectDragCancel(false); return;
+    }
+    const target = forcedId ? list.querySelector('[data-project-id="' + CSS.escape(forcedId) + '"]') :
+      (document.elementFromPoint(x, y) || {}).closest?.(".pf-project");
+    projectDragClearMarkers(drag);
+    drag.lifted = true;
+    drag.card.classList.add("pf-picked");
+    list.classList.add("pf-dragging");
+    if (!target) {
+      const boundary = projectDragGapTarget(list, drag, x, y);
+      if (!projectDragSetBoundary(list, drag, boundary)) {
+        drag.targetId = "";
+        drag.mode = "invalid";
+        drag.side = "";
+      }
+      projectDragPositionGhost(drag, x, y);
+      return;
+    }
+    const id = target.dataset.projectId;
+    drag.targetId = id;
+    const from = drag.visible.indexOf(drag.projectId), to = drag.visible.indexOf(id);
+    const sourceRect = drag.card.getBoundingClientRect(), targetRect = target.getBoundingClientRect();
+    const sameRow = Math.abs(sourceRect.top - targetRect.top) < 5;
+    if (id === drag.projectId) {
+      drag.mode = "self";
+    } else if (sameRow && Math.abs(from - to) === 1) {
+      drag.mode = "swap";
+      target.classList.add("pf-drop-swap");
+    } else {
+      drag.mode = "insert";
+      const rtl = getComputedStyle(list).direction === "rtl";
+      const before = forcedSide ? forcedSide === "before" : sameRow ? (rtl ? x > targetRect.left + targetRect.width / 2 : x < targetRect.left + targetRect.width / 2)
+        : y < targetRect.top + targetRect.height / 2;
+      drag.side = before ? "before" : "after";
+      target.classList.add(before ? "pf-drop-before" : "pf-drop-after");
+    }
+    projectDragPositionGhost(drag, x, y);
+  }
+  function reorderedProjectIds(drag) {
+    const full = drag.fullOrder.slice(), visible = drag.visible.slice();
+    const from = visible.indexOf(drag.projectId);
+    if (from < 0 || drag.mode === "self" || drag.mode === "invalid") return full;
+    let moved = visible.splice(from, 1)[0], at = visible.length;
+    if (drag.mode === "swap") {
+      const targetAt = visible.indexOf(drag.targetId);
+      if (targetAt < 0) return full;
+      visible.splice(targetAt, 0, moved);
+      moved = visible.splice(targetAt + 1, 1)[0];
+      visible.splice(from, 0, moved);
+    } else if (drag.targetId) {
+      const targetAtBeforeRemoval = drag.visible.indexOf(drag.targetId);
+      at = targetAtBeforeRemoval - (from < targetAtBeforeRemoval ? 1 : 0) + (drag.side === "after" ? 1 : 0);
+      at = Math.max(0, Math.min(visible.length, at));
+      visible.splice(at, 0, moved);
+    } else {
+      at = drag.side === "before" ? 0 : visible.length;
+      visible.splice(at, 0, moved);
+    }
+    const slots = [];
+    full.forEach((id, i) => { if (drag.visible.includes(id)) slots.push(i); });
+    slots.forEach((slot, i) => { full[slot] = visible[i]; });
+    return full;
+  }
+  async function saveProjectCard(op, payload, focusId, focusStatus = false) {
+    if (window.PF_PROJECT_SAVING) return false;
+    projectWriteGeneration += 1;
+    projectWriteInFlight = true;
+    confirmedBoardData = copyBoardData(window.BOARD);
+    window.PF_PROJECT_SAVING = true;
+    window.PF_PROJECT_MESSAGE = "";
+    render();
+    let result = null, ok = false;
+    try {
+      if (!token) throw new Error(tl("Кнопка доступна только при запуске локального сервера"));
+      const response = await fetch("/ui?op=" + op, { method: "POST", headers: { "X-Pult-Token": token, "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || (tl("ответ ") + response.status));
+      ok = true;
+      if (result.order && board && board.settings && board.settings.ui) board.settings.ui.project_order = result.order;
+      if (confirmedBoardData && result.order && confirmedBoardData.settings && confirmedBoardData.settings.ui)
+        confirmedBoardData.settings.ui.project_order = result.order.slice();
+      if (confirmedBoardData && op === "project-status" && result.status && !result.unchanged) {
+        const project = (confirmedBoardData.projects || []).find((p) => p.id === payload.id);
+        if (project) project.status = result.status;
+      }
+      if (op === "project-status" && result.status && !result.unchanged && board) {
+        const project = board.projects.find((p) => p.id === payload.id);
+        if (project) project.status = result.status;
+      }
+      window.PF_PROJECT_MESSAGE = tl(op === "project-order" ? "Порядок карточек сохранён" : "Статус проекта сохранён");
+    } catch (err) {
+      window.PF_PROJECT_MESSAGE = tl("Не удалось сохранить изменения карточки") + ": " + String(err && err.message || err);
+    }
+    projectWriteInFlight = false;
+    await refresh();
+    window.PF_PROJECT_SAVING = false;
+    render();
+    if (focusId) requestAnimationFrame(() => {
+      const control = document.querySelector(focusStatus ? '[data-project-status="' + CSS.escape(focusId) + '"]'
+        : '[data-project-handle="' + CSS.escape(focusId) + '"]');
+      if (control) control.focus();
+    });
+    const live = document.getElementById("pf-order-live");
+    if (live) live.textContent = window.PF_PROJECT_MESSAGE;
+    return ok;
+  }
+  async function commitProjectDrag(drag) {
+    if (!drag || window.PF_PROJECT_SAVING) return;
+    const visibleNow = projectCardIds(), orderNow = projectOrderFromBoard();
+    if (drag.filter !== state.projectGroup || visibleNow.join("\n") !== drag.visible.join("\n") || orderNow.join("\n") !== drag.fullOrder.join("\n")) {
+      projectDragCancel(true, true); return;
+    }
+    const order = reorderedProjectIds(drag), projectId = drag.projectId;
+    if (order.join("\n") === drag.fullOrder.join("\n")) {
+      projectDragFinish(true); return;
+    }
+    projectDragFinish(false, false);
+    await saveProjectCard("project-order", { project_id: projectId, previous_order: drag.fullOrder, order }, projectId);
+  }
+  document.addEventListener("pointerdown", (e) => {
+    const handle = e.target.closest && e.target.closest("[data-project-handle]");
+    if (!handle || e.button !== 0 || window.PF_PROJECT_SAVING || state.view !== "all") return;
+    const card = handle.closest(".pf-project");
+    if (!card) return;
+    e.preventDefault();
+    projectDragCancel(false);
+    const cardRect = card.getBoundingClientRect(), zoom = projectDragZoom();
+    projectDrag = { projectId: handle.dataset.projectHandle, fullOrder: projectOrderFromBoard(), visible: projectCardIds(),
+      filter: state.projectGroup, x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY,
+      grabX: e.clientX - cardRect.left, grabY: e.clientY - cardRect.top, cardRect, zoom,
+      pointerId: e.pointerId, handle, keyboard: false, lifted: false };
+    try { handle.setPointerCapture(e.pointerId); } catch (_) { }
+  });
+  document.addEventListener("pointermove", (e) => {
+    const drag = projectDrag;
+    if (!drag || drag.keyboard || drag.pointerId !== e.pointerId) return;
+    drag.x = e.clientX; drag.y = e.clientY;
+    if (!drag.lifted && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 6) return;
+    if (!drag.lifted) projectDragLift(drag);
+    if (!projectDrag || !projectDrag.lifted) return;
+    if (e.clientY < 42) window.scrollBy(0, -12);
+    else if (e.clientY > innerHeight - 42) window.scrollBy(0, 12);
+    projectDragTarget(e.clientX, e.clientY);
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener("pointerup", (e) => {
+    const drag = projectDrag;
+    if (!drag || drag.keyboard || drag.pointerId !== e.pointerId) return;
+    if (!drag.lifted) { projectDragFinish(false); return; }
+    projectDragTarget(e.clientX, e.clientY);
+    if (!projectDrag || !projectDrag.lifted) return;
+    commitProjectDrag(drag);
+  });
+  document.addEventListener("pointercancel", (e) => {
+    if (projectDrag && !projectDrag.keyboard && projectDrag.pointerId === e.pointerId) projectDragCancel(true, true);
+  });
+  document.addEventListener("keydown", (e) => {
+    const handle = e.target.closest && e.target.closest("[data-project-handle]");
+    if (!handle || window.PF_PROJECT_SAVING) return;
+    const activating = e.key === " " || e.key === "Enter";
+    if (!projectDrag) {
+      if (!activating) return;
+      e.preventDefault();
+      const id = handle.dataset.projectHandle;
+      projectDrag = { projectId: id, fullOrder: projectOrderFromBoard(), visible: projectCardIds(), filter: state.projectGroup,
+        keyboard: true, lifted: false, handle };
+      projectDragLift(projectDrag);
+      projectDrag.keyboardIndex = projectDrag.visible.indexOf(id);
+      const live = document.getElementById("pf-order-live");
+      if (live) live.textContent = tl("Карточка поднята. Используйте стрелки, Enter для сохранения или Escape для отмены.");
+      return;
+    }
+    if (!projectDrag.keyboard || projectDrag.projectId !== handle.dataset.projectHandle) return;
+    if (e.key === "Escape") {
+      e.preventDefault(); projectDragCancel(true, true); return;
+    }
+    if (activating) {
+      e.preventDefault();
+      const drag = projectDrag;
+      commitProjectDrag(drag);
+      return;
+    }
+    if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
+    e.preventDefault();
+    const rtl = getComputedStyle(projectListElement()).direction === "rtl";
+    const step = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 :
+      e.key === "ArrowRight" ? (rtl ? -1 : 1) : (rtl ? 1 : -1);
+    const next = Math.max(0, Math.min(projectDrag.visible.length - 1, projectDrag.keyboardIndex + step));
+    projectDrag.keyboardIndex = next;
+    const targetId = projectDrag.visible[next], from = projectDrag.visible.indexOf(projectDrag.projectId);
+    const target = document.querySelector('[data-project-id="' + CSS.escape(targetId) + '"]');
+    if (!target) { projectDragCancel(true, true); return; }
+    const rect = target.getBoundingClientRect();
+    projectDragTarget(rect.left + rect.width / 2, rect.top + rect.height / 2, targetId,
+      next > from ? "after" : next < from ? "before" : "before");
+    const live = document.getElementById("pf-order-live");
+    if (live) live.textContent = tl("Место карточки") + " " + (next + 1) + " / " + projectDrag.visible.length;
+  });
+  document.addEventListener("dragstart", (e) => { if (e.target.closest && e.target.closest(".pf-project-list")) e.preventDefault(); });
   const syncBtn = $("sync"), syncBox = $("syncbox");
   function showSync(kind, title, items) {
     syncBox.className = "syncbox" + (kind ? " " + kind : "");
@@ -372,6 +778,8 @@
     if (v !== state.view) { state.view = v; render(); }
   });
   document.addEventListener("click", (e) => {
+    if (e.target.closest && e.target.closest("[data-project-handle],[data-project-status]")) return;
+    if (projectDrag && e.target.closest && e.target.closest("nav button,[data-goto]")) projectDragCancel(true, true);
     const lg = e.target.closest("[data-lang]");
     if (lg) { setLang(lg.dataset.lang); return; }
     const rv = e.target.closest("[data-rv]");
@@ -433,7 +841,7 @@
     const f = e.target.closest("[data-filter]");
     if (f) { state.ideaFilter = f.dataset.filter; renderIdeas(); return; }
     const pg = e.target.closest("[data-pgroup]");
-    if (pg) { state.projectGroup = pg.dataset.pgroup; render(); return; }
+    if (pg) { if (projectDrag) projectDragCancel(true, true); state.projectGroup = pg.dataset.pgroup; render(); return; }
     const o = !drawer.contains(e.target) && e.target.closest("[data-open]");
     if (o) openStages(o.dataset.open);
   });
@@ -445,7 +853,10 @@
     if (r && r === e.target) { e.preventDefault(); rsAction(r.dataset.rs); }
   });
   let resizeTimer = 0;
-  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 150); });
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => {
+    if (projectDrag) projectDragCancel(true, true);
+    render();
+  }, 150); });
   $("period").addEventListener("change", (e) => { state.period = +e.target.value; render(); });
   document.addEventListener("input", (e) => {
     if (e.target.id === "rv-note") { state.rev.note = e.target.value; return; }
@@ -455,6 +866,12 @@
     if (e.key === "Enter" && e.target.dataset && (e.target.dataset.dpField === "amount" || e.target.dataset.dpField === "title")) { e.preventDefault(); dayAction("add"); }
   });
   document.addEventListener("change", (e) => {
+    const projectStatus = e.target.closest && e.target.closest("[data-project-status]");
+    if (projectStatus) {
+      const previous = projectStatus.dataset.status, status = projectStatus.value, id = projectStatus.dataset.projectStatus;
+      if (status !== previous) saveProjectCard("project-status", { id, previous_status: previous, status }, id, true);
+      return;
+    }
     if (e.target.dataset && e.target.dataset.dpField && e.target.tagName === "SELECT") { dayField(e.target); return; }
     if (e.target.dataset && e.target.dataset.dgdate) {
       if (e.target.dataset.dgdate === "from") state.dgFrom = e.target.value; else state.dgTo = e.target.value;

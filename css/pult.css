@@ -450,6 +450,72 @@
   .pf-project-stages span { font-size: 10.5px; }
   .pf-project-stages b { font-size: 12px; }
   .pf-alert-reason { margin-top: 7px; color: var(--warning-text); font-size: 12px; overflow-wrap: anywhere; }
+  /* Project cards: neutral work-priority cue, header status control and keyboard/pointer reorder. */
+  .pf-project-list { gap: 12px; }
+  .pf-project {
+    position: relative; overflow: hidden; padding: 0; border: 1px solid var(--axis); border-radius: 11px;
+    background: var(--card-2); cursor: pointer; transition: border-color .14s, box-shadow .14s, opacity .14s;
+  }
+  .pf-project[data-status="work"] { border-color: var(--good-text); }
+  .pf-project[data-status="pause"] { border-color: var(--serious-text); }
+  .pf-project[data-status="stop"] { border-color: var(--critical-text); }
+  .pf-project[data-status="plan"] { border-color: var(--axis); }
+  .pf-project:hover { box-shadow: 0 0 0 1px var(--muted); }
+  .pf-project-head {
+    align-items: center; justify-content: flex-start; padding: 11px 12px; background: var(--card);
+    border-bottom: 1px solid var(--line);
+  }
+  .pf-project-title { display: flex; align-items: flex-start; gap: 9px; min-width: 0; flex: 1 1 auto; }
+  .pf-group-mark { display: grid; flex: none; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--wash); color: var(--text-2); font-size: 15px; }
+  .pf-project-heading { min-width: 0; flex: 1 1 auto; }
+  .pf-project-name-line { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 8px; min-width: 0; }
+  .pf-project-name-line .pf-status-control { flex: 0 1 auto; }
+  .pf-project-head h3 { margin: 0; font-size: 14px; line-height: 1.35; }
+  .pf-project-heading .pgroup { margin-top: 3px; }
+  .pf-priority { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; background: var(--wash); color: var(--text-2); font-size: 10px; line-height: 1.45; white-space: nowrap; }
+  .pf-project-tools { display: flex; flex: none; align-items: center; gap: 5px; }
+  .pf-drag-handle { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 7px; background: var(--card-2); color: var(--text-2); cursor: grab; font: inherit; font-size: 17px; line-height: 1; touch-action: none; }
+  .pf-drag-handle:hover { border-color: var(--muted); color: var(--text); }
+  .pf-drag-handle:active { cursor: grabbing; }
+  .pf-drag-handle:focus-visible, .pf-status-control:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .pf-project-stages { padding: 11px 13px 8px; margin: 0; gap: 8px; }
+  .pf-project-stages .pf-current-stage b { color: var(--text); font-weight: 750; }
+  .pf-project-stages .pf-current-stage { border-inline-start: 2px solid var(--accent); padding-inline-start: 8px; }
+  .pf-status-control {
+    --pf-status-color: var(--info-text);
+    min-width: 0; max-width: 100%; padding: 4px 24px 4px 25px; border: 1px solid var(--line); border-radius: 999px;
+    appearance: none; background-color: var(--card); color: var(--text); font: inherit; font-size: 11.5px; line-height: 1.3; cursor: pointer;
+    background-image: radial-gradient(circle, var(--pf-status-color) 0 4px, transparent 4.5px),
+      linear-gradient(45deg, transparent 48%, var(--muted) 49% 57%, transparent 58%),
+      linear-gradient(135deg, transparent 48%, var(--muted) 49% 57%, transparent 58%);
+    background-position: 10px center, right 11px top 50%, right 6px top 50%;
+    background-size: 9px 9px, 6px 6px, 6px 6px; background-repeat: no-repeat;
+  }
+  .pf-status-control[data-status="work"] { --pf-status-color: var(--good-text); }
+  .pf-status-control[data-status="pause"] { --pf-status-color: var(--serious-text); }
+  .pf-status-control[data-status="stop"] { --pf-status-color: var(--critical-text); }
+  .pf-status-control[data-status="plan"] { --pf-status-color: var(--info-text); }
+  [dir="rtl"] .pf-status-control { padding-inline: 25px 24px; background-position: calc(100% - 10px) center, left 11px top 50%, left 6px top 50%; }
+  .pf-project-actions { display: flex; justify-content: flex-end; padding: 0 13px 11px; }
+  .pf-project-actions .svc-btn { font-size: 12px; }
+  .pf-project-proposal { margin-inline: 13px; }
+  .pf-project-message { margin: 0; padding: 8px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text-2); font-size: 12px; }
+  .pf-project-message[role="alert"] { color: var(--critical-text); }
+  .pf-project.pf-picked { opacity: .48; box-shadow: 0 8px 25px var(--shadow); }
+  .pf-project.pf-drop-before::before, .pf-project.pf-drop-after::after {
+    content: ""; position: absolute; z-index: 2; inset-inline: 8px; height: 4px; border-radius: 4px; background: var(--accent); box-shadow: 0 0 0 2px var(--card);
+  }
+  .pf-project.pf-drop-before::before { top: -2px; }
+  .pf-project.pf-drop-after::after { bottom: -2px; }
+  .pf-project.pf-drop-swap { outline: 3px dashed var(--accent); outline-offset: -5px; }
+  .pf-drag-ghost { position: fixed; z-index: 1000; pointer-events: none; opacity: .92; transform: none; box-shadow: 0 12px 30px var(--shadow); box-sizing: border-box; }
+  .pf-project-list.pf-dragging { user-select: none; }
+  .pf-project-list.pf-dragging .pf-project { cursor: grabbing; }
+  #pf-order-live { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  @media print {
+    .pf-drag-handle, .pf-project.pf-drop-before::before, .pf-project.pf-drop-after::after { display: none !important; }
+    .pf-project.pf-drop-swap { outline: none !important; }
+  }
 
   .wd-intro { display: grid; gap: 10px; margin-bottom: 14px; }
   .wd-topcards { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 10px; }
@@ -498,7 +564,9 @@
   .plan-btn { white-space: nowrap; }
   li .plan-btn { font-size: 11px; padding: 1px 8px; margin-inline-start: 6px; vertical-align: 1px; }
   .plan-in { font-size: 11px; color: var(--good-text); white-space: nowrap; margin-inline-start: 6px; }
+  .plan-pending { font-size: 11px; color: var(--muted); white-space: nowrap; margin-inline-start: 6px; }
   .albtns .plan-in { align-self: center; }
+  .albtns .plan-pending { align-self: center; }
   .hqday { margin-bottom: 16px; }
   .hq-card .rp-head, .pr-card .rp-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .hq-card .rp-tools { margin-inline-start: auto; display: flex; gap: 6px; flex-wrap: wrap; }

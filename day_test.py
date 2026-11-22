@@ -336,6 +336,145 @@ def main():
     else:
         check("K79 нет базы поясов — day.py add без --day берёт часы компьютера", east_ok and west_ok, east_info + " · " + west_info)
 
+    # --- HQ proposal source presence and atomic retry
+    fpr, spr = fresh()
+    key = "answer-synthetic-proposals|repeat-one"
+    proposal_op = {"op": "proposal_add", "key": key, "day": T, "title": "Повторяемая задача", "project": "alpha",
+                   "note": "Из предложения штаба"}
+    first = spr.apply([proposal_op])[0]
+    retry = spr.apply([proposal_op])[0]
+    check("K80 повтор HQ-предложения возвращает ту же видимую задачу", first["id"] == retry["id"] and retry["existing"]
+          and len(spr.view(T)["items"]) == 1)
+    check("K81 метка предложения входит в сегодняшнее состояние и сохраняет проект/заметку",
+          spr.view(T)["proposal_sources"] == [key] and spr.view(T)["items"][0]["project_id"] == "alpha"
+          and f"[pr:{key}]" in spr.view(T)["items"][0]["note"])
+    spr.apply([{"op": "status", "id": first["id"], "status": "done"}])
+    check("K82 завершённая, но видимая задача подтверждает предложение", spr.view(T)["proposal_sources"] == [key])
+    spr.apply([{"op": "remove", "id": first["id"]}])
+    removed_retry = spr.apply([proposal_op])[0]
+    check("K83 удалённую задачу повторно добавляют, старая запись остаётся", removed_retry["id"] != first["id"]
+          and [i["status"] for i in spr.view(T)["items"]] == ["removed", "planned"])
+    conn = raw(spr)
+    history = conn.execute("SELECT count(*) FROM item_log WHERE item_id = ?", (first["id"],)).fetchone()[0]
+    check("K84 повторное добавление не стирает историю прежней задачи", history >= 2)
+    conn.close()
+    moved_key = "answer-synthetic-proposals|repeat-moved"
+    moved = spr.apply([dict(proposal_op, key=moved_key, title="Task moved tomorrow")])[0]
+    spr.apply([{"op": "carry", "id": moved["id"], "to": T1}])
+    check("K85 перенесённая задача не считается присутствующей сегодня", moved_key not in spr.view(T)["proposal_sources"]
+          and moved_key not in spr.view(T1)["proposal_sources"])
+    concurrent_key = "answer-synthetic-proposals|parallel"
+    concurrent_op = dict(proposal_op, key=concurrent_key, title="Concurrent task", day=T1)
+    other_store = ds.Store(fpr)
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        concurrent = list(executor.map(lambda store: store.apply([concurrent_op])[0], (spr, other_store)))
+    concurrent_ids = {item["id"] for item in concurrent}
+    tomorrow_items = other_store.view(T1)["items"]
+    check("K86 два одновременных повтора создают одну задачу", len(concurrent_ids) == 1
+          and sum(i["note"].find(f"[pr:{concurrent_key}]") >= 0 for i in tomorrow_items) == 1)
+    check("K87 выбранная дата не меняет отдельный список источников на сегодня",
+          other_store.view(T1)["proposal_sources"] == [key])
+    shutil.rmtree(fpr, ignore_errors=True)
+
+    # --- восстановление старой HQ-задачи после повторного добавления того же предложения
+    frestore, srestore = fresh()
+    restore_key = "answer-synthetic-proposals|restore-after-readd"
+    restore_op = {"op": "proposal_add", "key": restore_key, "day": T, "title": "Restorable proposal", "note": "Из предложения штаба"}
+    old = srestore.apply([restore_op])[0]
+    srestore.apply([{"op": "status", "id": old["id"], "status": "done"}, {"op": "remove", "id": old["id"]}])
+    new = srestore.apply([restore_op])[0]
+    c = raw(srestore)
+    log_before = c.execute("SELECT count(*) FROM item_log WHERE item_id = ?", (old["id"],)).fetchone()[0]
+    c.close()
+    refused("K88 восстановление старой задачи блокируется, если предложение уже добавлено повторно",
+            lambda: srestore.apply([{"op": "restore", "id": old["id"]}]), "У предложения уже есть задача")
+    c = raw(srestore)
+    log_after = c.execute("SELECT count(*) FROM item_log WHERE item_id = ?", (old["id"],)).fetchone()[0]
+    c.close()
+    after_block = {i["id"]: i for i in srestore.view(T)["items"]}
+    check("K89 отказ не меняет удалённую запись, журнал или единственную видимую задачу",
+          after_block[old["id"]]["status"] == "removed" and after_block[new["id"]]["status"] == "planned"
+          and log_after == log_before and srestore.view(T)["proposal_sources"] == [restore_key])
+    srestore.apply([{"op": "remove", "id": new["id"]}, {"op": "restore", "id": old["id"]}])
+    restored = {i["id"]: i for i in srestore.view(T)["items"]}
+    check("K90 после удаления повтора стандартное восстановление возвращает прежний статус",
+          restored[old["id"]]["status"] == "done" and restored[new["id"]]["status"] == "removed"
+          and srestore.view(T)["proposal_sources"] == [restore_key])
+    c = raw(srestore)
+    old_actions = [r[0] for r in c.execute("SELECT action FROM item_log WHERE item_id = ? ORDER BY n", (old["id"],)).fetchall()]
+    new_actions = [r[0] for r in c.execute("SELECT action FROM item_log WHERE item_id = ? ORDER BY n", (new["id"],)).fetchall()]
+    c.close()
+    check("K90b журналы обеих записей сохраняют add/status/remove/restore",
+          old_actions == ["add", "status", "status", "status"] and new_actions == ["add", "status"])
+
+    reverse_key = "answer-synthetic-proposals|restore-before-readd"
+    reverse_op = dict(restore_op, key=reverse_key, title="Restore before readd")
+    reverse_old = srestore.apply([reverse_op])[0]
+    srestore.apply([{"op": "status", "id": reverse_old["id"], "status": "active"}, {"op": "remove", "id": reverse_old["id"]}])
+    srestore.apply([{"op": "restore", "id": reverse_old["id"]}])
+    reverse_retry = srestore.apply([reverse_op])[0]
+    reverse_rows = [i for i in srestore.view(T)["items"] if f"[pr:{reverse_key}]" in i["note"] and i["status"] not in ("removed", "moved")]
+    check("K91 восстановление перед повторным добавлением возвращает ту же задачу без дубля",
+          reverse_retry["id"] == reverse_old["id"] and reverse_retry.get("existing") is True
+          and len(reverse_rows) == 1 and reverse_rows[0]["status"] == "active")
+
+    # Same-date different source keys and same source on a different date do not block restore.
+    other_key = "answer-synthetic-proposals|restore-distinct-key"
+    other_op = dict(restore_op, key=other_key, title=restore_op["title"])
+    other_old = srestore.apply([other_op])[0]
+    srestore.apply([{"op": "remove", "id": other_old["id"]}])
+    srestore.apply([{"op": "restore", "id": other_old["id"]}])
+    check("K92 другой ключ предложения в ту же дату не мешает восстановлению",
+          any(i["id"] == other_old["id"] and i["status"] == "planned" for i in srestore.view(T)["items"]))
+    next_day_key = "answer-synthetic-proposals|restore-another-date"
+    next_day_op = dict(restore_op, key=next_day_key, title="Same source across dates")
+    same_day = srestore.apply([next_day_op])[0]
+    next_day = srestore.apply([dict(next_day_op, day=T1)])[0]
+    srestore.apply([{"op": "remove", "id": next_day["id"]}, {"op": "restore", "id": next_day["id"]}])
+    check("K93 видимая задача с тем же ключом в другой дате не мешает восстановлению",
+          next_day["id"] != same_day["id"] and
+          any(i["id"] == next_day["id"] and i["status"] == "planned" for i in srestore.view(T1)["items"]))
+
+    done_key = "answer-synthetic-proposals|restore-done-duplicate"
+    done_op = dict(restore_op, key=done_key, title="Completed duplicate")
+    done_old = srestore.apply([done_op])[0]
+    srestore.apply([{"op": "remove", "id": done_old["id"]}])
+    done_new = srestore.apply([done_op])[0]
+    srestore.apply([{"op": "status", "id": done_new["id"], "status": "done"}])
+    refused("K94 завершённая видимая задача тоже блокирует восстановление дубля",
+            lambda: srestore.apply([{"op": "restore", "id": done_old["id"]}]), "У предложения уже есть задача")
+    done_rows = [i for i in srestore.view(T)["items"] if f"[pr:{done_key}]" in i["note"]]
+    check("K95 завершённая задача остаётся единственной видимой, прежняя остаётся убранной",
+          len([i for i in done_rows if i["status"] not in ("removed", "moved")]) == 1
+          and next(i for i in done_rows if i["id"] == done_old["id"])["status"] == "removed"
+          and next(i for i in done_rows if i["id"] == done_new["id"])["status"] == "done")
+
+    race_key = "answer-synthetic-proposals|restore-add-race"
+    race_op = dict(restore_op, key=race_key, title="Atomic add and restore")
+    race_old = srestore.apply([race_op])[0]
+    srestore.apply([{"op": "remove", "id": race_old["id"]}])
+    other_store = ds.Store(frestore)
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    barrier = Barrier(2)
+    def race(store, operation):
+        barrier.wait()
+        try:
+            return store.apply([operation])[0]
+        except ds.DayError as exc:
+            return {"error": str(exc)}
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(lambda args: race(*args), ((srestore, race_op), (other_store, {"op": "restore", "id": race_old["id"]}))))
+    race_rows = [i for i in ds.Store(frestore).view(T)["items"] if f"[pr:{race_key}]" in i["note"]]
+    check("K96 конкурентные повторное добавление и возврат сериализуются в одну видимую задачу",
+          len([i for i in race_rows if i["status"] not in ("removed", "moved")]) == 1
+          and len(race_rows) in (1, 2) and len(outcomes) == 2)
+    restarted = ds.Store(frestore).view(T)["items"]
+    check("K97 одна видимая запись сохраняется при открытии хранилища заново",
+          len([i for i in restarted if f"[pr:{race_key}]" in i["note"] and i["status"] not in ("removed", "moved")]) == 1)
+    shutil.rmtree(frestore, ignore_errors=True)
+
     print(f"\nПройдено {len(PASSED)}, не пройдено {len(FAILED)}" + (": " + ", ".join(FAILED) if FAILED else ""))
     shutil.rmtree(folder, ignore_errors=True)
     return 1 if FAILED else 0

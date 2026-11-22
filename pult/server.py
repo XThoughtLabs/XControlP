@@ -119,6 +119,33 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 not secrets.compare_digest(self.headers.get("X-Pult-Token", ""), self.server.token):
             self.send_error(403)
             return
+        ui_op = (query.get("op") or [""])[0]
+        if path == "/ui" and ui_op in ("project-order", "project-status"):
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = -1
+            if not 0 < length <= DAY_BODY_LIMIT or not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                self.send_error(400)
+                return
+            try:
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                if not isinstance(payload, dict):
+                    raise ValueError("Нужен JSON-объект")
+                from .project_overview import apply_order, apply_status
+                result, status = (apply_order(payload) if ui_op == "project-order" else apply_status(payload))
+            except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+                result, status = {"ok": False, "error": f"Некорректный JSON: {exc}"}, 400
+            except Exception as exc:
+                report = traceback.format_exc()
+                try:
+                    SYNC_LOG.write_text(datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + "\n\n" + report, encoding="utf-8")
+                except OSError:
+                    pass
+                result, status = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500
+            self.server.seen = time.monotonic()
+            self.send(status, json.dumps(result, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
+            return
         if path in ("/day/op", "/request"):
             try:
                 length = int(self.headers.get("Content-Length") or 0)
