@@ -633,7 +633,7 @@
       for (const p of (a.data && Array.isArray(a.data.proposals) ? a.data.proposals : [])) {
         if (p.project !== projectId) continue;
         const key = prKey(a, p), mark = prMark(key);
-        if (mark && (mark.state === "accepted" || mark.state === "declined")) continue;
+        if (mark && (mark.state === "accepted" || mark.state === "declined" || mark.state === "done")) continue;
         return { answer: a, proposal: p, key };
       }
     }

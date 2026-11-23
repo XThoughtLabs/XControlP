@@ -356,7 +356,7 @@
     const rows = [];
     (board.answers || []).forEach((a) => (a.data && Array.isArray(a.data.proposals) ? a.data.proposals : []).forEach((p) => {
       const key = prKey(a, p), mark = prMark(key);
-      if (mark && mark.state === "declined") return;
+      if (mark && (mark.state === "declined" || mark.state === "done")) return;   // отклонено или «Уже реализовано»: не в плане дня
       const planState = proposalPlanState(key);
       if (planState === "present" || (planState === "unknown" && mark && mark.state === "accepted")) return;
       const project = p.project ? dpProject(p.project) : null;
@@ -364,7 +364,8 @@
         '<b>' + esc(rpT(p.text)) + '</b>' + (project ? '<span class="dp-proj-name">' + esc(project.name) + '</span>' : "") +
         (p.why ? '<p>' + esc(rpT(p.why)) + '</p>' : "") + '</div><div class="albtns">' +
         planBtn("pr:" + key, rpT(p.text), project ? project.id : "", tl("Из предложений штаба"), true) +
-        '<button type="button" class="albtn" data-goto="proposals">' + esc(tl("Открыть предложение")) + '</button></div></article>');
+        '<button type="button" class="albtn" data-goto="proposals">' + esc(tl("Открыть предложение")) + '</button>' +
+        (dpServer() ? '<button type="button" class="albtn" data-pr="done:' + esc(key) + '">' + esc(tl("Уже реализовано")) + '</button>' : "") + '</div></article>');
     }));
     return rows.length ? '<section class="card dp-incoming"><div class="dp-head"><h2>' + esc(tl("Входящие предложения штаба")) + '</h2><button type="button" class="svc-btn" data-goto="proposals">' + esc(tl("Предложения")) + '</button></div>' +
       '<div class="dp-hq-list">' + rows.join("") + '</div></section>' : "";

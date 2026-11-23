@@ -292,7 +292,7 @@
     if (!D) return '<div class="card"><p class="rs-note">' + esc(tl("Ответ штаба не читается")) + ': ' + esc(a.file) + (a.error ? " · " + esc(a.error) : "") + '</p></div>';
     const props = (Array.isArray(D.proposals) ? D.proposals : []).map((p) => {
       const key = prKey(a, p), st = (prMark(key) || {}).state || "", proj = p.project ? board.projects.find((x) => x.id === p.project) : null;
-      const btns = st === "declined" ? '<span class="pr-st">' + esc(tl("отклонено")) + '</span><button type="button" class="albtn" data-pr="active:' + esc(key) + '">' + esc(tl("Вернуть")) + '</button>'
+      const btns = st === "declined" || st === "done" ? '<span class="pr-st">' + esc(tl(st === "done" ? "реализовано" : "отклонено")) + '</span><button type="button" class="albtn" data-pr="active:' + esc(key) + '">' + esc(tl("Вернуть")) + '</button>'
         : planBtn("pr:" + key, rpT(p.text), proj ? proj.id : "", tl("Из предложений штаба"), true) +
           (dpServer() && !st ? '<button type="button" class="albtn" data-pr="declined:' + esc(key) + '">' + esc(tl("Отклонить")) + '</button>' : "");
       return '<li class="pr-item' + (st ? " pr-" + st : "") + '"><div>' + mdInline(rpT(p.text)) + (proj ? ' <span class="pr-proj">· ' + esc(proj.name) + '</span>' : "") + '</div>' +

@@ -529,6 +529,66 @@ async function main() {
       requests[1] === "/update/apply?target=" + AVAILABLE.target, JSON.stringify({ before, offer, requests }));
   }
 
+  // 1.0.06: the proposal mark «Уже реализовано» (done). Four proposals of one answer: p1 without a mark, p2 added on an
+  // earlier day (accepted, missing from today's plan), p3 done, p4 declined.
+  const doneAnswer = ans("request-2026-01-15-090000-proposals", "proposals", "2026-01-15T09:00", { proposals: [
+    { id: "p1", text: { ru: "Первое", en: "First", he: "First" }, project: "p1" },
+    { id: "p2", text: { ru: "Второе", en: "Second", he: "Second" }, project: "p1" },
+    { id: "p3", text: { ru: "Третье", en: "Third", he: "Third" }, project: "p1" },
+    { id: "p4", text: { ru: "Четвёртое", en: "Fourth", he: "Fourth" }, project: "p1" }] });
+  const dk = (id) => "request-2026-01-15-090000-proposals|" + id;
+  const doneMarks = { [dk("p2")]: { state: "accepted", at: "2026-01-14" }, [dk("p3")]: { state: "done", at: "2026-01-15" },
+    [dk("p4")]: { state: "declined", at: "2026-01-15" } };
+  const donePage = (tok, lang, marks) => {
+    const p = page({ settings: { lang: lang || "ru" } }, !!lang);
+    Object.assign(p.ctx, { token: tok, stamp: (x) => String(x || ""), refresh() {}, showSync() {} });
+    p.ctx.DATA = data(undefined, { answers: [doneAnswer], requests: [], proposal_marks: marks || doneMarks });
+    p.run("board = normalize(DATA); state.day.proposalCheck = { day: dayKey(today()), sources: [], confirmed: true };");
+    return p;
+  };
+
+  // W32: the Day Plan's incoming block: a done or declined proposal is not shown; every shown card has the button
+  // «Уже реализовано» with its own key, after «Открыть предложение»; without the program (no key) there is no button.
+  {
+    const html = donePage("t").run("dpIncomingHtml()");
+    const off = donePage("").run("dpIncomingHtml()");
+    const btn = (id) => 'data-pr="done:' + dk(id) + '"';
+    const cards = (h) => (h.match(/class="dp-hq-proposal"/g) || []).length;
+    check("W32 Day Plan: done and declined proposals not shown; the button «Уже реализовано» on each shown card, only with the program",
+      cards(html) === 2 && html.includes("Первое") && html.includes("Второе") && !html.includes("Третье") && !html.includes("Четвёртое")
+      && html.includes(btn("p1")) && html.includes(btn("p2")) && !html.includes(btn("p3")) && (html.match(/data-pr="done:/g) || []).length === 2
+      && html.indexOf(btn("p1")) > html.indexOf('data-goto="proposals"', html.indexOf("Первое"))
+      && html.includes(">Уже реализовано</button>") && cards(off) === 2 && !off.includes('data-pr="done:'),
+      JSON.stringify({ html, off }));
+  }
+
+  // W33: the Proposals tab keeps a done proposal, marked «реализовано» with «Вернуть» (active), like a declined one;
+  // the English and Hebrew windows translate the button and the mark.
+  {
+    const p = donePage("t");
+    p.run("renderProposals();");
+    const html = p.els.ideas.innerHTML;
+    const item = (text) => { const i = html.indexOf(text); return html.slice(html.lastIndexOf("<li", i), html.indexOf("</li>", i)); };
+    const p3 = item("Третье"), p4 = item("Четвёртое");
+    const en = donePage("t", "en"), he = donePage("t", "he");
+    const words = [en.run('tl("Уже реализовано")'), en.run('tl("реализовано")'), he.run('tl("Уже реализовано")'), he.run('tl("реализовано")')];
+    check("W33 Proposals tab: a done proposal stays, marked «реализовано» with «Вернуть»; English and Hebrew translated",
+      p3.includes('class="pr-item pr-done"') && p3.includes('<span class="pr-st">реализовано</span>') && p3.includes('data-pr="active:' + dk("p3") + '"')
+      && !p3.includes('data-plan=') && p4.includes("отклонено") && words[0] === "Already done" && words[1] === "done"
+      && words.slice(2).every((w) => w && !/[А-Яа-яЁё]/.test(w)),
+      JSON.stringify({ p3, p4, words }));
+  }
+
+  // W34: the Overview's project cards do not offer a done proposal; with the done mark removed the same proposal is offered.
+  {
+    const only3 = { [dk("p1")]: { state: "accepted" }, [dk("p2")]: { state: "accepted" }, [dk("p3")]: { state: "done" }, [dk("p4")]: { state: "declined" } };
+    const hidden = donePage("t", "", only3).run('JSON.stringify(stage3Proposal("p1"))');
+    const free = Object.assign({}, only3); delete free[dk("p3")];
+    const shown = donePage("t", "", free).run('(stage3Proposal("p1") || {}).key || null');
+    check("W34 Overview: a done proposal is not offered on its project card; without the mark it is",
+      hidden === "null" && shown === dk("p3"), JSON.stringify({ hidden, shown }));
+  }
+
   console.log("\nPassed " + PASSED.length + ", failed " + FAILED.length + (FAILED.length ? ": " + FAILED.join(", ") : ""));
   return FAILED.length ? 1 : 0;
 }

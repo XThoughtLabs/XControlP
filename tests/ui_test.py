@@ -190,6 +190,24 @@ def main():
                              capture_output=True, text=True, encoding="utf-8")
         check("R5 answer_check: digest answer OK, unknown kind BAD", run.returncode == 1 and "OK   " + str(good) in run.stdout
               and "BAD  " + str(bad) in run.stdout, run.stdout + run.stderr)
+
+        # R6: the proposal mark «Уже реализовано» (done, 1.0.06): saved and read back; «Вернуть» (active) removes it;
+        # an unknown mark is refused and leaves the saved one; a hand-written unknown state is skipped when read.
+        hq.PROPOSALS = folder / "proposals.json"
+        key = "request-2026-01-15-090000-proposals|p1"
+        r_done = hq.save_proposal(q(key=key, state="done"))
+        after_done = hq.read_proposal_marks().get(key, {}).get("state")
+        r_bad = hq.save_proposal(q(key=key, state="finished"))
+        kept = hq.read_proposal_marks().get(key, {}).get("state")
+        r_active = hq.save_proposal(q(key=key, state="active"))
+        gone = key not in hq.read_proposal_marks()
+        hq.PROPOSALS.write_text(json.dumps({"marks": {key: {"state": "finished"}, "a|p2": {"state": "done", "at": "2026-01-15"}}}),
+                                encoding="utf-8")
+        read = hq.read_proposal_marks()
+        check("R6 mark done: saved, read back, removed by active; an unknown mark refused and skipped",
+              r_done.get("ok") is True and after_done == "done" and r_bad.get("ok") is False and kept == "done"
+              and r_active.get("ok") is True and gone and read == {"a|p2": {"state": "done", "at": "2026-01-15"}},
+              repr([r_done, after_done, r_bad, kept, r_active, gone, read]))
     finally:
         shutil.rmtree(folder, ignore_errors=True)
     print(f"\n{len(PASSED)} passed, {len(FAILED)} failed")

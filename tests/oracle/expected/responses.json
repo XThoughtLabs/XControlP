@@ -21,16 +21,16 @@
   "bytes": 13414,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "46a33bfadfc89a907e3912c0680e106bbb80108c6fcc5a6bde95c09ba7f8c0c1",
+  "sha256": "59a1fa3a82934f0a07f43d72abdcdcb94d50a6605cb23240400868b9a5e37592",
   "status": 200,
   "step": "G03",
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 143699,
+  "bytes": 143884,
   "method": "GET",
   "path": "/i18n.js",
-  "sha256": "793c836e31d97ac15e03886c78c7644c2ca0ff307d0ef8940e0078eeb937ba79",
+  "sha256": "3741ec8d4e7a36ca9765de6a9f2e99ca7bf56c7fe7fc2e0d4ee90d7202acc34c",
   "status": 200,
   "step": "G04",
   "type": "text/javascript; charset=utf-8"
@@ -160,10 +160,10 @@
   "type": "text/css; charset=utf-8"
  },
  {
-  "bytes": 72380,
+  "bytes": 72405,
   "method": "GET",
   "path": "/js/01-core.js",
-  "sha256": "28fa6ad1817276f2c138ee0c795464c2b3b762871a6508fc1434cdf3e0a556c2",
+  "sha256": "9b87eee0bbc8faa2123dc6eabda95167ec66d1ff03bf6da839b80c7afe81ae8f",
   "status": 200,
   "step": "G19",
   "type": "text/javascript; charset=utf-8"
@@ -196,10 +196,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 40006,
+  "bytes": 40288,
   "method": "GET",
   "path": "/js/05-day-plan.js",
-  "sha256": "6b6a4ff354a4fa238a9bac94b72600ed92259cf7b1e0c99a74602c30c9873db3",
+  "sha256": "5bebc9018a380ee1c9df817f6da9c708df04f8c1e19dcddcf393f145d7e1db42",
   "status": 200,
   "step": "G23",
   "type": "text/javascript; charset=utf-8"
@@ -223,10 +223,10 @@
   "type": "text/javascript; charset=utf-8"
  },
  {
-  "bytes": 35724,
+  "bytes": 35784,
   "method": "GET",
   "path": "/js/08-reports.js",
-  "sha256": "4a9d823e46d0bb6bad3cfa7170b1c4f24968194cf55b079b5d5893921379c1d8",
+  "sha256": "ce2d2c23e69e254077196252724ddf797e4243cea30fed1f9c63bead18791ecd",
   "status": 200,
   "step": "G26",
   "type": "text/javascript; charset=utf-8"
@@ -505,7 +505,7 @@
   "bytes": 13651,
   "method": "GET",
   "path": "/data.js",
-  "sha256": "00043f3b71c671971ca5ad502606ef5f24a36fc0a3a3dce21b254941d4349aca",
+  "sha256": "48bafa04cf89f1383cd3c22d33c499d946ba0f38e0a745fba5885fe3b06cd4f7",
   "status": 200,
   "step": "S17",
   "type": "text/javascript; charset=utf-8"
