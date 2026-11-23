@@ -1,6 +1,20 @@
 {
- "version": "1.0.04",
+ "version": "1.0.05",
  "releases": [
+  {
+   "version": "1.0.05",
+   "notes": {
+    "en": [
+     "HQ proposal cards in the Day Plan show their text across the full width, with the buttons below it."
+    ],
+    "ru": [
+     "Текст карточек «Предложение штаба» в Плане дня занимает всю ширину, а кнопки стоят под ним."
+    ],
+    "he": [
+     "בכרטיסי הצעות המטה בתוכנית היום הטקסט תופס את כל הרוחב, והכפתורים נמצאים מתחתיו."
+    ]
+   }
+  },
   {
    "version": "1.0.04",
    "notes": {

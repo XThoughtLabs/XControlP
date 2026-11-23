@@ -1155,12 +1155,12 @@
   .app.stage4-reference-view .dp-incoming .dp-head { align-items: center; }
   .app.stage4-reference-view .dp-incoming h2 { margin: 0; font-size: 16px; }
   .app.stage4-reference-view .dp-hq-list { display: grid; gap: 8px; }
-  .app.stage4-reference-view .dp-hq-proposal { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-2); }
+  .app.stage4-reference-view .dp-hq-proposal { display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-2); }
   .app.stage4-reference-view .dp-hq-copy { min-width: 0; display: grid; gap: 3px; font-size: 14px; overflow-wrap: anywhere; }
   .app.stage4-reference-view .dp-hq-source { color: var(--accent-text); font-size: 12px; font-weight: 700; }
   .app.stage4-reference-view .dp-proj-name { color: var(--text-2); font-size: 12px; font-weight: 600; }
   .app.stage4-reference-view .dp-hq-copy p { margin: 2px 0 0; color: var(--text-2); font-size: 13px; }
-  .app.stage4-reference-view .dp-hq-proposal .albtns { flex: none; display: flex; flex-wrap: wrap; gap: 8px; }
+  .app.stage4-reference-view .dp-hq-proposal .albtns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .app.stage4-reference-view .dp-st.primary {
     color: var(--accent-ink); background: var(--accent); border-color: var(--accent); font-weight: 700;
   }
